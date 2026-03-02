@@ -1,0 +1,29 @@
+import { Injectable, Inject, ConflictException } from '@nestjs/common';
+import { USER_REPOSITORY } from '@domain/ports/user.repository.interface';
+import type { IUserRepository } from '@domain/ports/user.repository.interface';
+import { User } from '@domain/models/user.model';
+
+@Injectable()
+export class UserService {
+  constructor(
+    @Inject(USER_REPOSITORY)
+    private readonly userRepository: IUserRepository,
+  ) {}
+
+  async createUser(data: Partial<User>): Promise<User> {
+    if (!data.email) {
+      throw new Error('Email is required to create a user');
+    }
+
+    const existingUser = await this.userRepository.findByEmail(data.email);
+    if (existingUser) {
+      throw new ConflictException('User with this email already exists');
+    }
+
+    return this.userRepository.create(data);
+  }
+
+  async getUser(id: string): Promise<User | null> {
+    return this.userRepository.findById(id);
+  }
+}
