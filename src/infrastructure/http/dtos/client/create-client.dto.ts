@@ -6,7 +6,7 @@ import {
   IsString,
   IsUUID,
 } from 'class-validator';
-import { ClientStage } from '@domain/models/client.model';
+import { ClientStage } from '@domain/enums/client-stage.enum';
 
 export class CreateClientDto {
   @IsUUID()

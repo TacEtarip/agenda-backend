@@ -12,7 +12,7 @@ import { NoteOrmEntity } from './note.orm-entity';
 import { AppointmentOrmEntity } from './appointment.orm-entity';
 import { AttachmentOrmEntity } from './attachment.orm-entity';
 
-import { ClientStage } from '@domain/models/client.model';
+import { ClientStage } from '@domain/enums/client-stage.enum';
 
 @Entity('clients')
 export class ClientOrmEntity {

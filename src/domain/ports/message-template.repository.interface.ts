@@ -1,5 +1,5 @@
 import { MessageTemplate } from '../models/message-template.model';
-import { ClientStage } from '../models/client.model';
+import { ClientStage } from '../enums/client-stage.enum';
 
 export const MESSAGE_TEMPLATE_REPOSITORY = 'MESSAGE_TEMPLATE_REPOSITORY';
 

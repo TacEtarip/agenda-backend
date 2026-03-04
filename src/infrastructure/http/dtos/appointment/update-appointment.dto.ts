@@ -5,7 +5,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { AppointmentStatus } from '@domain/models/appointment.model';
+import { AppointmentStatus } from '@domain/enums/appointment-status.enum';
 
 export class UpdateAppointmentDto {
   @IsString()

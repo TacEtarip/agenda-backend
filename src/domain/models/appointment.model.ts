@@ -1,8 +1,4 @@
-export enum AppointmentStatus {
-  SCHEDULED = 'scheduled',
-  COMPLETED = 'completed',
-  CANCELLED = 'cancelled',
-}
+import { AppointmentStatus } from '../enums/appointment-status.enum';
 
 export class Appointment {
   id!: string;

@@ -1,10 +1,4 @@
-export enum ClientStage {
-  FIRST_CONTACT = 'FIRST_CONTACT',
-  FOLLOW_UP = 'FOLLOW_UP',
-  CLOSED_SALE = 'CLOSED_SALE',
-  MAINTENANCE = 'MAINTENANCE',
-  POST_SALE = 'POST_SALE',
-}
+import { ClientStage } from '../enums/client-stage.enum';
 
 export class Client {
   id!: string;

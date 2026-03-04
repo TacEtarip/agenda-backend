@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { IMessageTemplateRepository } from '@domain/ports/message-template.repository.interface';
 import { MessageTemplate } from '@domain/models/message-template.model';
-import { ClientStage } from '@domain/models/client.model';
+import { ClientStage } from '@domain/enums/client-stage.enum';
 import { MessageTemplateOrmEntity } from '../entities/message-template.orm-entity';
 import { MessageTemplateMapper } from '../mappers/message-template.mapper';
 

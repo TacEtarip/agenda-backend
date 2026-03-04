@@ -1,4 +1,4 @@
-import { ClientStage } from './client.model';
+import { ClientStage } from '../enums/client-stage.enum';
 
 export class MessageTemplate {
   id!: string;

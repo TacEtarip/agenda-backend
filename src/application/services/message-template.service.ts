@@ -1,6 +1,6 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { MessageTemplate } from '@domain/models/message-template.model';
-import { ClientStage } from '@domain/models/client.model';
+import { ClientStage } from '@domain/enums/client-stage.enum';
 import type { IMessageTemplateRepository } from '@domain/ports/message-template.repository.interface';
 import { MESSAGE_TEMPLATE_REPOSITORY } from '@domain/ports/message-template.repository.interface';
 

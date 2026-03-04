@@ -6,7 +6,7 @@ import {
   IsString,
   IsUUID,
 } from 'class-validator';
-import { AppointmentStatus } from '@domain/models/appointment.model';
+import { AppointmentStatus } from '@domain/enums/appointment-status.enum';
 
 export class CreateAppointmentDto {
   @IsUUID()

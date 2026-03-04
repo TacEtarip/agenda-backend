@@ -1,4 +1,4 @@
-import { ClientStage } from '@domain/models/client.model';
+import { ClientStage } from '@domain/enums/client-stage.enum';
 import { IsEnum, IsNotEmpty, IsString, IsUUID } from 'class-validator';
 
 export class UpsertMessageTemplateDto {

@@ -5,7 +5,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { AppointmentStatus } from '@domain/models/appointment.model';
+import { AppointmentStatus } from '@domain/enums/appointment-status.enum';
 import { ClientOrmEntity } from './client.orm-entity';
 import { UserOrmEntity } from './user.orm-entity';
 
