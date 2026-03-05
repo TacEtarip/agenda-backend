@@ -9,7 +9,8 @@ export class Appointment {
   endTime!: Date;
   status!: AppointmentStatus;
   description?: string;
-  googleEventId?: string;
+  externalEventId?: string;
+  meetingUrl?: string;
 
   constructor(partial: Partial<Appointment>) {
     Object.assign(this, partial);

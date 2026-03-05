@@ -10,6 +10,7 @@ export class UserMapper {
       lastName: ormEntity.lastName,
       passwordHash: ormEntity.passwordHash,
       googleId: ormEntity.googleId,
+      microsoftId: ormEntity.microsoftId,
       createdAt: ormEntity.createdAt,
     });
   }
@@ -24,6 +25,8 @@ export class UserMapper {
       ormEntity.passwordHash = domainUser.passwordHash;
     if (domainUser.googleId !== undefined)
       ormEntity.googleId = domainUser.googleId;
+    if (domainUser.microsoftId !== undefined)
+      ormEntity.microsoftId = domainUser.microsoftId;
     return ormEntity;
   }
 }

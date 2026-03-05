@@ -11,6 +11,8 @@ import { NoteModule } from '@infrastructure/modules/note.module';
 import { AppointmentModule } from '@infrastructure/modules/appointment.module';
 import { AttachmentModule } from '@infrastructure/modules/attachment.module';
 import { MessageTemplateModule } from '@infrastructure/modules/message-template.module';
+import { ProductModule } from '@infrastructure/modules/product.module';
+import { ClientProductModule } from '@infrastructure/modules/client-product.module';
 
 @Module({
   imports: [
@@ -40,6 +42,8 @@ import { MessageTemplateModule } from '@infrastructure/modules/message-template.
     AppointmentModule,
     AttachmentModule,
     MessageTemplateModule,
+    ProductModule,
+    ClientProductModule,
   ],
   controllers: [AppController],
   providers: [AppService],

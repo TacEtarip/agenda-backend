@@ -1,0 +1,78 @@
+import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { CLIENT_PRODUCT_REPOSITORY } from '@domain/ports/client-product.repository.interface';
+import type { IClientProductRepository } from '@domain/ports/client-product.repository.interface';
+import { CLIENT_REPOSITORY } from '@domain/ports/client.repository.interface';
+import type { IClientRepository } from '@domain/ports/client.repository.interface';
+import { PRODUCT_REPOSITORY } from '@domain/ports/product.repository.interface';
+import type { IProductRepository } from '@domain/ports/product.repository.interface';
+import { ClientProduct } from '@domain/models/client-product.model';
+
+@Injectable()
+export class ClientProductService {
+  constructor(
+    @Inject(CLIENT_PRODUCT_REPOSITORY)
+    private readonly clientProductRepository: IClientProductRepository,
+    @Inject(CLIENT_REPOSITORY)
+    private readonly clientRepository: IClientRepository,
+    @Inject(PRODUCT_REPOSITORY)
+    private readonly productRepository: IProductRepository,
+  ) {}
+
+  private async assertClientExists(clientId: string): Promise<void> {
+    const client = await this.clientRepository.findById(clientId);
+    if (!client) throw new NotFoundException(`Client ${clientId} not found`);
+  }
+
+  private async assertProductExists(productId: string): Promise<void> {
+    const product = await this.productRepository.findById(productId);
+    if (!product) throw new NotFoundException(`Product ${productId} not found`);
+  }
+
+  async createClientProduct(
+    data: Partial<ClientProduct>,
+  ): Promise<ClientProduct> {
+    if (!data.clientId) throw new Error('clientId is required');
+    if (!data.productId) throw new Error('productId is required');
+
+    await this.assertClientExists(data.clientId);
+    await this.assertProductExists(data.productId);
+
+    return this.clientProductRepository.create(data);
+  }
+
+  async getClientProductById(id: string): Promise<ClientProduct> {
+    const clientProduct = await this.clientProductRepository.findById(id);
+    if (!clientProduct) {
+      throw new NotFoundException(`ClientProduct ${id} not found`);
+    }
+    return clientProduct;
+  }
+
+  async getClientProductsByClient(clientId: string): Promise<ClientProduct[]> {
+    await this.assertClientExists(clientId);
+    return this.clientProductRepository.findAllByClientId(clientId);
+  }
+
+  async getClientProductsByProduct(
+    productId: string,
+  ): Promise<ClientProduct[]> {
+    await this.assertProductExists(productId);
+    return this.clientProductRepository.findAllByProductId(productId);
+  }
+
+  async updateClientProduct(
+    id: string,
+    data: Partial<ClientProduct>,
+  ): Promise<ClientProduct> {
+    await this.getClientProductById(id); // asserts existence
+    if (data.clientId) await this.assertClientExists(data.clientId);
+    if (data.productId) await this.assertProductExists(data.productId);
+
+    return this.clientProductRepository.update(id, data);
+  }
+
+  async deleteClientProduct(id: string): Promise<void> {
+    await this.getClientProductById(id); // asserts existence
+    await this.clientProductRepository.delete(id);
+  }
+}

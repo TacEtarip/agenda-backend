@@ -12,7 +12,8 @@ export class AppointmentMapper {
       endTime: ormEntity.endTime,
       status: ormEntity.status,
       description: ormEntity.description,
-      googleEventId: ormEntity.googleEventId,
+      externalEventId: ormEntity.externalEventId,
+      meetingUrl: ormEntity.meetingUrl,
     });
   }
 
@@ -32,8 +33,10 @@ export class AppointmentMapper {
     if (domainAppointment.status) ormEntity.status = domainAppointment.status;
     if (domainAppointment.description !== undefined)
       ormEntity.description = domainAppointment.description;
-    if (domainAppointment.googleEventId !== undefined)
-      ormEntity.googleEventId = domainAppointment.googleEventId;
+    if (domainAppointment.externalEventId !== undefined)
+      ormEntity.externalEventId = domainAppointment.externalEventId;
+    if (domainAppointment.meetingUrl !== undefined)
+      ormEntity.meetingUrl = domainAppointment.meetingUrl;
     return ormEntity;
   }
 }

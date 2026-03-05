@@ -8,6 +8,8 @@ import { NOTE_REPOSITORY } from '@domain/ports/note.repository.interface';
 import { APPOINTMENT_REPOSITORY } from '@domain/ports/appointment.repository.interface';
 import { ATTACHMENT_REPOSITORY } from '@domain/ports/attachment.repository.interface';
 import { MESSAGE_TEMPLATE_REPOSITORY } from '@domain/ports/message-template.repository.interface';
+import { PRODUCT_REPOSITORY } from '@domain/ports/product.repository.interface';
+import { CLIENT_PRODUCT_REPOSITORY } from '@domain/ports/client-product.repository.interface';
 
 // ORM Entities
 import { UserOrmEntity } from './entities/user.orm-entity';
@@ -16,6 +18,8 @@ import { NoteOrmEntity } from './entities/note.orm-entity';
 import { AppointmentOrmEntity } from './entities/appointment.orm-entity';
 import { AttachmentOrmEntity } from './entities/attachment.orm-entity';
 import { MessageTemplateOrmEntity } from './entities/message-template.orm-entity';
+import { ProductOrmEntity } from './entities/product.orm-entity';
+import { ClientProductOrmEntity } from './entities/client-product.orm-entity';
 
 // Repositories
 import { UserRepository } from './repositories/user.repository';
@@ -24,6 +28,8 @@ import { NoteRepository } from './repositories/note.repository';
 import { AppointmentRepository } from './repositories/appointment.repository';
 import { AttachmentRepository } from './repositories/attachment.repository';
 import { MessageTemplateRepository } from './repositories/message-template.repository';
+import { ProductRepository } from './repositories/product.repository';
+import { ClientProductRepository } from './repositories/client-product.repository';
 
 // Combine Repositories Providers to bind Interfaces -> Implementations
 const repositoryProviders = [
@@ -51,6 +57,14 @@ const repositoryProviders = [
     provide: MESSAGE_TEMPLATE_REPOSITORY,
     useClass: MessageTemplateRepository,
   },
+  {
+    provide: PRODUCT_REPOSITORY,
+    useClass: ProductRepository,
+  },
+  {
+    provide: CLIENT_PRODUCT_REPOSITORY,
+    useClass: ClientProductRepository,
+  },
 ];
 
 @Global()
@@ -63,6 +77,8 @@ const repositoryProviders = [
       AppointmentOrmEntity,
       AttachmentOrmEntity,
       MessageTemplateOrmEntity,
+      ProductOrmEntity,
+      ClientProductOrmEntity,
     ]),
   ],
   providers: [...repositoryProviders],

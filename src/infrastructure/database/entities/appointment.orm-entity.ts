@@ -26,8 +26,11 @@ export class AppointmentOrmEntity {
   @Column({ name: 'end_time', type: 'timestamp' })
   endTime!: Date;
 
-  @Column({ name: 'google_event_id', nullable: true })
-  googleEventId!: string;
+  @Column({ name: 'external_event_id', nullable: true })
+  externalEventId!: string;
+
+  @Column({ name: 'meeting_url', nullable: true })
+  meetingUrl!: string;
 
   @Column({
     type: 'enum',

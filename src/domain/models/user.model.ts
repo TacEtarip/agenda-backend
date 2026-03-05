@@ -6,6 +6,7 @@ export class User {
   createdAt!: Date;
   passwordHash?: string;
   googleId?: string;
+  microsoftId?: string;
 
   constructor(partial: Partial<User>) {
     Object.assign(this, partial);

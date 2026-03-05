@@ -31,5 +31,9 @@ export class UpdateAppointmentDto {
 
   @IsString()
   @IsOptional()
-  googleEventId?: string;
+  externalEventId?: string;
+
+  @IsString()
+  @IsOptional()
+  meetingUrl?: string;
 }

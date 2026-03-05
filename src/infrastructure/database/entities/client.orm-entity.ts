@@ -11,6 +11,7 @@ import { UserOrmEntity } from './user.orm-entity';
 import { NoteOrmEntity } from './note.orm-entity';
 import { AppointmentOrmEntity } from './appointment.orm-entity';
 import { AttachmentOrmEntity } from './attachment.orm-entity';
+import { ClientProductOrmEntity } from './client-product.orm-entity';
 
 import { ClientStage } from '@domain/enums/client-stage.enum';
 
@@ -60,4 +61,10 @@ export class ClientOrmEntity {
 
   @OneToMany(() => AttachmentOrmEntity, (attachment) => attachment.client)
   attachments!: AttachmentOrmEntity[];
+
+  @OneToMany(
+    () => ClientProductOrmEntity,
+    (clientProduct) => clientProduct.client,
+  )
+  clientProducts!: ClientProductOrmEntity[];
 }
