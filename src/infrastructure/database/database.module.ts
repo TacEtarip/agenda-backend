@@ -20,6 +20,7 @@ import { AttachmentOrmEntity } from './entities/attachment.orm-entity';
 import { MessageTemplateOrmEntity } from './entities/message-template.orm-entity';
 import { ProductOrmEntity } from './entities/product.orm-entity';
 import { ClientProductOrmEntity } from './entities/client-product.orm-entity';
+import { StageOrmEntity } from './entities/stage.orm-entity';
 
 // Repositories
 import { UserRepository } from './repositories/user.repository';
@@ -30,6 +31,7 @@ import { AttachmentRepository } from './repositories/attachment.repository';
 import { MessageTemplateRepository } from './repositories/message-template.repository';
 import { ProductRepository } from './repositories/product.repository';
 import { ClientProductRepository } from './repositories/client-product.repository';
+import { StageSeedService } from './stage-seed.service';
 
 // Combine Repositories Providers to bind Interfaces -> Implementations
 const repositoryProviders = [
@@ -79,9 +81,10 @@ const repositoryProviders = [
       MessageTemplateOrmEntity,
       ProductOrmEntity,
       ClientProductOrmEntity,
+      StageOrmEntity,
     ]),
   ],
-  providers: [...repositoryProviders],
+  providers: [...repositoryProviders, StageSeedService],
   exports: [...repositoryProviders, TypeOrmModule],
 })
 export class DatabaseModule {}

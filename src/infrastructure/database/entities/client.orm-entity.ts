@@ -12,6 +12,7 @@ import { NoteOrmEntity } from './note.orm-entity';
 import { AppointmentOrmEntity } from './appointment.orm-entity';
 import { AttachmentOrmEntity } from './attachment.orm-entity';
 import { ClientProductOrmEntity } from './client-product.orm-entity';
+import { StageOrmEntity } from './stage.orm-entity';
 
 import { ClientStage } from '@domain/enums/client-stage.enum';
 
@@ -35,6 +36,7 @@ export class ClientOrmEntity {
   @Column({
     type: 'enum',
     enum: ClientStage,
+    enumName: 'client_stage_enum',
     default: ClientStage.FIRST_CONTACT,
   })
   stage!: ClientStage;
@@ -67,4 +69,10 @@ export class ClientOrmEntity {
     (clientProduct) => clientProduct.client,
   )
   clientProducts!: ClientProductOrmEntity[];
+
+  @ManyToOne(() => StageOrmEntity, (stage) => stage.clients, {
+    nullable: false,
+  })
+  @JoinColumn({ name: 'stage', referencedColumnName: 'code' })
+  stageDefinition!: StageOrmEntity;
 }

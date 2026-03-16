@@ -11,21 +11,25 @@ export class MessageTemplateService {
     private readonly templateRepository: IMessageTemplateRepository,
   ) {}
 
-  async createOrUpdateTemplate(
+  async createTemplate(
     userId: string,
     stage: ClientStage,
     messageBody: string,
   ): Promise<MessageTemplate> {
-    const existing = await this.templateRepository.findByUserAndStage(
-      userId,
-      stage,
-    );
-    if (existing) {
-      return this.templateRepository.update(existing.id, { messageBody });
-    }
-
     const newTemplate = new MessageTemplate({ userId, stage, messageBody });
     return this.templateRepository.create(newTemplate);
+  }
+
+  async updateTemplate(
+    id: string,
+    updates: Partial<Pick<MessageTemplate, 'stage' | 'messageBody'>>,
+  ): Promise<MessageTemplate> {
+    const template = await this.templateRepository.findById(id);
+    if (!template) {
+      throw new NotFoundException(`MessageTemplate with ID ${id} not found`);
+    }
+
+    return this.templateRepository.update(id, updates);
   }
 
   async getTemplateById(id: string): Promise<MessageTemplate> {

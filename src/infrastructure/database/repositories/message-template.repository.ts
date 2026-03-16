@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { IMessageTemplateRepository } from '@domain/ports/message-template.repository.interface';
 import { MessageTemplate } from '@domain/models/message-template.model';
-import { ClientStage } from '@domain/enums/client-stage.enum';
 import { MessageTemplateOrmEntity } from '../entities/message-template.orm-entity';
 import { MessageTemplateMapper } from '../mappers/message-template.mapper';
 
@@ -27,19 +26,11 @@ export class MessageTemplateRepository implements IMessageTemplateRepository {
   }
 
   async findByUserId(userId: string): Promise<MessageTemplate[]> {
-    const entities = await this.ormRepository.find({ where: { userId } });
-    return entities.map((entity) => MessageTemplateMapper.toDomain(entity));
-  }
-
-  async findByUserAndStage(
-    userId: string,
-    stage: ClientStage,
-  ): Promise<MessageTemplate | null> {
-    const entity = await this.ormRepository.findOne({
-      where: { userId, stage },
+    const entities = await this.ormRepository.find({
+      where: { userId },
+      order: { updatedAt: 'DESC' },
     });
-    if (!entity) return null;
-    return MessageTemplateMapper.toDomain(entity);
+    return entities.map((entity) => MessageTemplateMapper.toDomain(entity));
   }
 
   async update(
