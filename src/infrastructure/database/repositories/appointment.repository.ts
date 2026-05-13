@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import { IAppointmentRepository } from '@domain/ports/appointment.repository.interface';
 import { Appointment } from '@domain/models/appointment.model';
 import { AppointmentOrmEntity } from '../entities/appointment.orm-entity';
@@ -31,6 +31,15 @@ export class AppointmentRepository implements IAppointmentRepository {
 
   async findAllByClientId(clientId: string): Promise<Appointment[]> {
     const ormEntities = await this.repository.find({ where: { clientId } });
+    return ormEntities.map((entity) => AppointmentMapper.toDomain(entity));
+  }
+
+  async findUpcoming(from: Date, to: Date): Promise<Appointment[]> {
+    const ormEntities = await this.repository.find({
+      where: {
+        startTime: Between(from, to)
+      } // Here we might want to also filter by status (e.g., SCHEDULED or PENDING_PAYMENT)
+    });
     return ormEntities.map((entity) => AppointmentMapper.toDomain(entity));
   }
 

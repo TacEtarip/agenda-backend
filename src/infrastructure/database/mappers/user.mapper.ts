@@ -11,6 +11,12 @@ export class UserMapper {
       passwordHash: ormEntity.passwordHash,
       googleId: ormEntity.googleId,
       microsoftId: ormEntity.microsoftId,
+      integrationProvider: ormEntity.integrationProvider,
+      syncCalendar: ormEntity.syncCalendar,
+      syncContacts: ormEntity.syncContacts,
+      sendDailyDigest: ormEntity.sendDailyDigest,
+      paymentEnabled: ormEntity.paymentEnabled,
+      paymentGatewayKey: ormEntity.paymentGatewayKey,
       createdAt: ormEntity.createdAt,
     });
   }
@@ -27,6 +33,20 @@ export class UserMapper {
       ormEntity.googleId = domainUser.googleId;
     if (domainUser.microsoftId !== undefined)
       ormEntity.microsoftId = domainUser.microsoftId;
+      
+    if (domainUser.integrationProvider !== undefined)
+      ormEntity.integrationProvider = domainUser.integrationProvider;
+    if (domainUser.syncCalendar !== undefined)
+      ormEntity.syncCalendar = domainUser.syncCalendar;
+    if (domainUser.syncContacts !== undefined)
+      ormEntity.syncContacts = domainUser.syncContacts;
+    if (domainUser.sendDailyDigest !== undefined)
+      ormEntity.sendDailyDigest = domainUser.sendDailyDigest;
+    if (domainUser.paymentEnabled !== undefined)
+      ormEntity.paymentEnabled = domainUser.paymentEnabled;
+    if (domainUser.paymentGatewayKey !== undefined)
+      ormEntity.paymentGatewayKey = domainUser.paymentGatewayKey;
+
     return ormEntity;
   }
 }

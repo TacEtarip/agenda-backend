@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DatabaseModule } from './infrastructure/database/database.module';
@@ -13,6 +14,8 @@ import { AttachmentModule } from '@infrastructure/modules/attachment.module';
 import { MessageTemplateModule } from '@infrastructure/modules/message-template.module';
 import { ProductModule } from '@infrastructure/modules/product.module';
 import { ClientProductModule } from '@infrastructure/modules/client-product.module';
+import { MessagingModule } from '@infrastructure/messaging/messaging.module';
+import { PaymentModule } from '@infrastructure/payments/payment.module';
 
 @Module({
   imports: [
@@ -20,6 +23,7 @@ import { ClientProductModule } from '@infrastructure/modules/client-product.modu
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -44,6 +48,8 @@ import { ClientProductModule } from '@infrastructure/modules/client-product.modu
     MessageTemplateModule,
     ProductModule,
     ClientProductModule,
+    MessagingModule, // Integra el proveedor de WhatsAppWeb
+    PaymentModule, // Integra la pasarela de pagos local (Culqi/Niubiz/MercadoPago)
   ],
   controllers: [AppController],
   providers: [AppService],

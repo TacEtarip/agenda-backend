@@ -23,11 +23,15 @@ export class AppointmentController {
 
   @Post()
   create(@Body() dto: CreateAppointmentDto) {
-    return this.appointmentService.createAppointment({
-      ...dto,
-      startTime: new Date(dto.startTime),
-      endTime: new Date(dto.endTime),
-    });
+    const { requestPaymentLink, ...appointmentData } = dto;
+    return this.appointmentService.createAppointment(
+      {
+        ...appointmentData,
+        startTime: new Date(appointmentData.startTime),
+        endTime: new Date(appointmentData.endTime),
+      },
+      requestPaymentLink,
+    );
   }
 
   @Get('user/:userId')

@@ -32,4 +32,7 @@ export class CreateAppointmentDto {
   @IsEnum(AppointmentStatus)
   @IsOptional()
   status?: AppointmentStatus;
+
+  @IsOptional()
+  requestPaymentLink?: boolean;
 }

@@ -32,6 +32,24 @@ export class UserOrmEntity {
   @Column({ name: 'last_name' })
   lastName!: string;
 
+  @Column({ name: 'integration_provider', default: 'none' })
+  integrationProvider!: string;
+
+  @Column({ name: 'sync_calendar', default: true })
+  syncCalendar!: boolean;
+
+  @Column({ name: 'sync_contacts', default: false })
+  syncContacts!: boolean;
+
+  @Column({ name: 'send_daily_digest', default: true })
+  sendDailyDigest!: boolean;
+
+  @Column({ name: 'payment_enabled', default: false })
+  paymentEnabled!: boolean;
+
+  @Column({ name: 'payment_gateway_key', nullable: true })
+  paymentGatewayKey!: string;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 

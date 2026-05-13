@@ -8,6 +8,14 @@ export class User {
   googleId?: string;
   microsoftId?: string;
 
+  // Settings
+  integrationProvider?: string;
+  syncCalendar?: boolean;
+  syncContacts?: boolean;
+  sendDailyDigest?: boolean;
+  paymentEnabled?: boolean;
+  paymentGatewayKey?: string;
+
   constructor(partial: Partial<User>) {
     Object.assign(this, partial);
   }

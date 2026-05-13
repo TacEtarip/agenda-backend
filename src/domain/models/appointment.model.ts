@@ -11,6 +11,9 @@ export class Appointment {
   description?: string;
   externalEventId?: string;
   meetingUrl?: string;
+  // Nuevos campos opcionales para manejo de pagos
+  paymentId?: string;
+  paymentUrl?: string;
 
   constructor(partial: Partial<Appointment>) {
     Object.assign(this, partial);

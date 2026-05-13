@@ -14,6 +14,8 @@ export class AppointmentMapper {
       description: ormEntity.description,
       externalEventId: ormEntity.externalEventId,
       meetingUrl: ormEntity.meetingUrl,
+      paymentId: ormEntity.paymentId,
+      paymentUrl: ormEntity.paymentUrl,
     });
   }
 
@@ -37,6 +39,10 @@ export class AppointmentMapper {
       ormEntity.externalEventId = domainAppointment.externalEventId;
     if (domainAppointment.meetingUrl !== undefined)
       ormEntity.meetingUrl = domainAppointment.meetingUrl;
+    if (domainAppointment.paymentId !== undefined)
+      ormEntity.paymentId = domainAppointment.paymentId;
+    if (domainAppointment.paymentUrl !== undefined)
+      ormEntity.paymentUrl = domainAppointment.paymentUrl;
     return ormEntity;
   }
 }

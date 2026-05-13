@@ -4,21 +4,20 @@ import {
   UnauthorizedException,
   ConflictException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
+import { AUTH_PROVIDER } from '@domain/ports/auth.provider.interface';
+import type { IAuthProvider } from '@domain/ports/auth.provider.interface';
 import { USER_REPOSITORY } from '@domain/ports/user.repository.interface';
 import type { IUserRepository } from '@domain/ports/user.repository.interface';
 import { User } from '@domain/models/user.model';
 import type { RegisterDto } from '@infrastructure/http/dtos/auth/register.dto';
-
-const SALT_ROUNDS = 10;
 
 @Injectable()
 export class AuthService {
   constructor(
     @Inject(USER_REPOSITORY)
     private readonly userRepository: IUserRepository,
-    private readonly jwtService: JwtService,
+    @Inject(AUTH_PROVIDER)
+    private readonly authProvider: IAuthProvider,
   ) {}
 
   async register(dto: RegisterDto): Promise<{ accessToken: string }> {
@@ -27,7 +26,7 @@ export class AuthService {
       throw new ConflictException('A user with this email already exists');
     }
 
-    const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
+    const passwordHash = await this.authProvider.hashPassword(dto.password);
 
     const user = await this.userRepository.create({
       email: dto.email,
@@ -36,7 +35,7 @@ export class AuthService {
       passwordHash,
     });
 
-    return this.signToken(user);
+    return this.authProvider.generateToken(user);
   }
 
   async login(
@@ -44,7 +43,7 @@ export class AuthService {
     password: string,
   ): Promise<{ accessToken: string }> {
     const user = await this.validateUser(email, password);
-    return this.signToken(user);
+    return this.authProvider.generateToken(user);
   }
 
   async validateUser(email: string, password: string): Promise<User> {
@@ -53,16 +52,14 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    const isMatch = await this.authProvider.comparePasswords(
+      password,
+      user.passwordHash,
+    );
     if (!isMatch) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
     return user;
-  }
-
-  private signToken(user: User): { accessToken: string } {
-    const payload = { sub: user.id, email: user.email };
-    return { accessToken: this.jwtService.sign(payload) };
   }
 }
