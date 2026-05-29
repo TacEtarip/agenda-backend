@@ -3,14 +3,10 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-  IsUUID,
   Min,
 } from 'class-validator';
 
 export class CreateProductDto {
-  @IsUUID()
-  userId!: string;
-
   @IsString()
   @IsNotEmpty()
   name!: string;

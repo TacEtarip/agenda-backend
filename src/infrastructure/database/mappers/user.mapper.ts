@@ -5,6 +5,7 @@ export class UserMapper {
   static toDomain(ormEntity: UserOrmEntity): User {
     return new User({
       id: ormEntity.id,
+      companyId: ormEntity.companyId,
       email: ormEntity.email,
       firstName: ormEntity.firstName,
       lastName: ormEntity.lastName,
@@ -24,6 +25,8 @@ export class UserMapper {
   static toOrmEntity(domainUser: Partial<User>): UserOrmEntity {
     const ormEntity = new UserOrmEntity();
     if (domainUser.id) ormEntity.id = domainUser.id;
+    if (domainUser.companyId !== undefined)
+      ormEntity.companyId = domainUser.companyId!;
     if (domainUser.email) ormEntity.email = domainUser.email;
     if (domainUser.firstName) ormEntity.firstName = domainUser.firstName;
     if (domainUser.lastName) ormEntity.lastName = domainUser.lastName;
@@ -33,7 +36,7 @@ export class UserMapper {
       ormEntity.googleId = domainUser.googleId;
     if (domainUser.microsoftId !== undefined)
       ormEntity.microsoftId = domainUser.microsoftId;
-      
+
     if (domainUser.integrationProvider !== undefined)
       ormEntity.integrationProvider = domainUser.integrationProvider;
     if (domainUser.syncCalendar !== undefined)

@@ -5,6 +5,7 @@ export class MessageTemplateMapper {
   static toDomain(ormEntity: MessageTemplateOrmEntity): MessageTemplate {
     return new MessageTemplate({
       id: ormEntity.id,
+      companyId: ormEntity.companyId,
       userId: ormEntity.userId,
       stage: ormEntity.stage,
       messageBody: ormEntity.messageBody,
@@ -18,6 +19,7 @@ export class MessageTemplateMapper {
   ): MessageTemplateOrmEntity {
     const ormEntity = new MessageTemplateOrmEntity();
     if (domain.id) ormEntity.id = domain.id;
+    if (domain.companyId !== undefined) ormEntity.companyId = domain.companyId!;
     if (domain.userId) ormEntity.userId = domain.userId;
     if (domain.stage) ormEntity.stage = domain.stage;
     if (domain.messageBody) ormEntity.messageBody = domain.messageBody;

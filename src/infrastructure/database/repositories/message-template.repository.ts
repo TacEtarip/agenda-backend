@@ -25,12 +25,15 @@ export class MessageTemplateRepository implements IMessageTemplateRepository {
     return MessageTemplateMapper.toDomain(entity);
   }
 
-  async findByUserId(userId: string): Promise<MessageTemplate[]> {
+  async findByCompanyId(companyId: string): Promise<MessageTemplate[]> {
     const entities = await this.ormRepository.find({
-      where: { userId },
+      where: { company: { id: companyId } },
+      relations: ['company'],
       order: { updatedAt: 'DESC' },
     });
-    return entities.map((entity) => MessageTemplateMapper.toDomain(entity));
+    return entities.map((entity: MessageTemplateOrmEntity) =>
+      MessageTemplateMapper.toDomain(entity),
+    );
   }
 
   async update(

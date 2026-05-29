@@ -19,14 +19,19 @@ export class NoteRepository implements INoteRepository {
     return NoteMapper.toDomain(savedEntity);
   }
 
-  async findById(id: string): Promise<Note | null> {
-    const ormEntity = await this.repository.findOne({ where: { id } });
+  async findById(id: string, companyId: string): Promise<Note | null> {
+    const ormEntity = await this.repository.findOne({ where: { id, companyId } });
     return ormEntity ? NoteMapper.toDomain(ormEntity) : null;
   }
 
-  async findAllByClientId(clientId: string): Promise<Note[]> {
-    const ormEntities = await this.repository.find({ where: { clientId } });
-    return ormEntities.map((entity) => NoteMapper.toDomain(entity));
+  async findAllByClientId(clientId: string, companyId: string): Promise<Note[]> {
+    const ormEntities = await this.repository.find({
+      where: { client: { id: clientId }, companyId },
+      relations: ['client'],
+    });
+    return ormEntities.map((entity: NoteOrmEntity) =>
+      NoteMapper.toDomain(entity),
+    );
   }
 
   async update(id: string, note: Partial<Note>): Promise<Note> {

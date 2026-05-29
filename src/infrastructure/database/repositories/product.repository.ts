@@ -24,9 +24,14 @@ export class ProductRepository implements IProductRepository {
     return ormEntity ? ProductMapper.toDomain(ormEntity) : null;
   }
 
-  async findAllByUserId(userId: string): Promise<Product[]> {
-    const ormEntities = await this.repository.find({ where: { userId } });
-    return ormEntities.map((entity) => ProductMapper.toDomain(entity));
+  async findAllByCompanyId(companyId: string): Promise<Product[]> {
+    const ormEntities = await this.repository.find({
+      where: { company: { id: companyId } },
+      relations: ['company'],
+    });
+    return ormEntities.map((entity: ProductOrmEntity) =>
+      ProductMapper.toDomain(entity),
+    );
   }
 
   async update(id: string, product: Partial<Product>): Promise<Product> {

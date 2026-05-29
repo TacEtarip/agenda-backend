@@ -1,5 +1,6 @@
 export class User {
   id!: string;
+  companyId?: string;
   email!: string;
   firstName!: string;
   lastName!: string;

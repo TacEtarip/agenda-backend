@@ -2,6 +2,7 @@ import { Module, Global } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 // Ports
+import { COMPANY_REPOSITORY } from '@domain/ports/company.repository.interface';
 import { USER_REPOSITORY } from '@domain/ports/user.repository.interface';
 import { CLIENT_REPOSITORY } from '@domain/ports/client.repository.interface';
 import { NOTE_REPOSITORY } from '@domain/ports/note.repository.interface';
@@ -12,6 +13,7 @@ import { PRODUCT_REPOSITORY } from '@domain/ports/product.repository.interface';
 import { CLIENT_PRODUCT_REPOSITORY } from '@domain/ports/client-product.repository.interface';
 
 // ORM Entities
+import { CompanyOrmEntity } from './entities/company.orm-entity';
 import { UserOrmEntity } from './entities/user.orm-entity';
 import { ClientOrmEntity } from './entities/client.orm-entity';
 import { NoteOrmEntity } from './entities/note.orm-entity';
@@ -23,6 +25,7 @@ import { ClientProductOrmEntity } from './entities/client-product.orm-entity';
 import { StageOrmEntity } from './entities/stage.orm-entity';
 
 // Repositories
+import { CompanyRepository } from './repositories/company.repository';
 import { UserRepository } from './repositories/user.repository';
 import { ClientRepository } from './repositories/client.repository';
 import { NoteRepository } from './repositories/note.repository';
@@ -35,6 +38,10 @@ import { StageSeedService } from './stage-seed.service';
 
 // Combine Repositories Providers to bind Interfaces -> Implementations
 const repositoryProviders = [
+  {
+    provide: COMPANY_REPOSITORY,
+    useClass: CompanyRepository,
+  },
   {
     provide: USER_REPOSITORY,
     useClass: UserRepository,
@@ -73,6 +80,7 @@ const repositoryProviders = [
 @Module({
   imports: [
     TypeOrmModule.forFeature([
+      CompanyOrmEntity,
       UserOrmEntity,
       ClientOrmEntity,
       NoteOrmEntity,

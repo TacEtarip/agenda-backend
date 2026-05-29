@@ -8,6 +8,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { UserOrmEntity } from './user.orm-entity';
+import { CompanyOrmEntity } from './company.orm-entity';
 import { NoteOrmEntity } from './note.orm-entity';
 import { AppointmentOrmEntity } from './appointment.orm-entity';
 import { AttachmentOrmEntity } from './attachment.orm-entity';
@@ -20,6 +21,16 @@ import { ClientStage } from '@domain/enums/client-stage.enum';
 export class ClientOrmEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
+
+  @Column({ name: 'company_id', nullable: true })
+  companyId!: string;
+
+  @ManyToOne(
+    () => CompanyOrmEntity,
+    (company: CompanyOrmEntity) => company.clients,
+  )
+  @JoinColumn({ name: 'company_id' })
+  company!: CompanyOrmEntity;
 
   @Column({ name: 'first_name' })
   firstName!: string;

@@ -8,26 +8,41 @@ import {
   Post,
   Put,
   NotFoundException,
+  UseGuards,
 } from '@nestjs/common';
 import { ClientService } from '@application/services/client.service';
 import { CreateClientDto } from '../dtos/client/create-client.dto';
+import { JwtAuthGuard } from '@infrastructure/auth/guards/jwt-auth.guard';
+import { CurrentUser } from '@infrastructure/auth/decorators/current-user.decorator';
+import type { JwtPayload } from '@infrastructure/auth/strategies/jwt.strategy';
 
+@UseGuards(JwtAuthGuard)
 @Controller('clients')
 export class ClientController {
   constructor(private readonly clientService: ClientService) {}
 
   @Post()
-  async create(@Body() createClientDto: CreateClientDto) {
-    const client = await this.clientService.createClient(createClientDto);
+  async create(
+    @Body() createClientDto: CreateClientDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    // Inyectamos el tenant al DTO/Entity antes de pasarlo al service
+    const clientData = {
+      ...createClientDto,
+      userId: user.sub, // Keep for backward compatibility or replace
+      companyId: user.companyId,
+    };
+    const client = await this.clientService.createClient(clientData);
     return {
       message: 'Client created successfully',
       client,
     };
   }
 
-  @Get('user/:userId')
-  async findAllByUser(@Param('userId', ParseUUIDPipe) userId: string) {
-    return this.clientService.getClientsByUser(userId);
+  @Get()
+  async findAll(@CurrentUser() user: JwtPayload) {
+    if (!user.companyId) return [];
+    return this.clientService.getClientsByCompany(user.companyId);
   }
 
   @Get(':id')

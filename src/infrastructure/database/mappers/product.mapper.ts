@@ -5,6 +5,7 @@ export class ProductMapper {
   static toDomain(ormEntity: ProductOrmEntity): Product {
     return new Product({
       id: ormEntity.id,
+      companyId: ormEntity.companyId,
       userId: ormEntity.userId,
       name: ormEntity.name,
       description: ormEntity.description ?? undefined,
@@ -19,6 +20,8 @@ export class ProductMapper {
   static toOrmEntity(domainProduct: Partial<Product>): ProductOrmEntity {
     const ormEntity = new ProductOrmEntity();
     if (domainProduct.id) ormEntity.id = domainProduct.id;
+    if (domainProduct.companyId !== undefined)
+      ormEntity.companyId = domainProduct.companyId!;
     if (domainProduct.userId) ormEntity.userId = domainProduct.userId;
     if (domainProduct.name) ormEntity.name = domainProduct.name;
     if (domainProduct.description !== undefined)

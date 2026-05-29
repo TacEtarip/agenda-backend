@@ -1,8 +1,6 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { PRODUCT_REPOSITORY } from '@domain/ports/product.repository.interface';
 import type { IProductRepository } from '@domain/ports/product.repository.interface';
-import { USER_REPOSITORY } from '@domain/ports/user.repository.interface';
-import type { IUserRepository } from '@domain/ports/user.repository.interface';
 import { Product } from '@domain/models/product.model';
 
 @Injectable()
@@ -10,18 +8,10 @@ export class ProductService {
   constructor(
     @Inject(PRODUCT_REPOSITORY)
     private readonly productRepository: IProductRepository,
-    @Inject(USER_REPOSITORY)
-    private readonly userRepository: IUserRepository,
   ) {}
 
-  private async assertUserExists(userId: string): Promise<void> {
-    const user = await this.userRepository.findById(userId);
-    if (!user) throw new NotFoundException(`User ${userId} not found`);
-  }
-
   async createProduct(data: Partial<Product>): Promise<Product> {
-    if (!data.userId) throw new Error('userId is required');
-    await this.assertUserExists(data.userId);
+    if (!data.companyId) throw new Error('companyId is required');
     return this.productRepository.create(data);
   }
 
@@ -31,9 +21,8 @@ export class ProductService {
     return product;
   }
 
-  async getProductsByUser(userId: string): Promise<Product[]> {
-    await this.assertUserExists(userId);
-    return this.productRepository.findAllByUserId(userId);
+  getProductsByCompany(companyId: string): Promise<Product[]> {
+    return this.productRepository.findAllByCompanyId(companyId);
   }
 
   async updateProduct(id: string, data: Partial<Product>): Promise<Product> {

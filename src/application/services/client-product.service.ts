@@ -18,61 +18,82 @@ export class ClientProductService {
     private readonly productRepository: IProductRepository,
   ) {}
 
-  private async assertClientExists(clientId: string): Promise<void> {
+  private async assertClientExists(
+    clientId: string,
+    companyId: string,
+  ): Promise<void> {
     const client = await this.clientRepository.findById(clientId);
-    if (!client) throw new NotFoundException(`Client ${clientId} not found`);
+    if (!client || client.companyId !== companyId)
+      throw new NotFoundException(`Client ${clientId} not found`);
   }
 
-  private async assertProductExists(productId: string): Promise<void> {
+  private async assertProductExists(
+    productId: string,
+    companyId: string,
+  ): Promise<void> {
     const product = await this.productRepository.findById(productId);
-    if (!product) throw new NotFoundException(`Product ${productId} not found`);
+    if (!product || product.companyId !== companyId)
+      throw new NotFoundException(`Product ${productId} not found`);
   }
 
   async createClientProduct(
     data: Partial<ClientProduct>,
+    companyId: string,
   ): Promise<ClientProduct> {
     if (!data.clientId) throw new Error('clientId is required');
     if (!data.productId) throw new Error('productId is required');
 
-    await this.assertClientExists(data.clientId);
-    await this.assertProductExists(data.productId);
+    await this.assertClientExists(data.clientId, companyId);
+    await this.assertProductExists(data.productId, companyId);
 
     return this.clientProductRepository.create(data);
   }
 
-  async getClientProductById(id: string): Promise<ClientProduct> {
+  async getClientProductById(
+    id: string,
+    companyId: string,
+  ): Promise<ClientProduct> {
     const clientProduct = await this.clientProductRepository.findById(id);
     if (!clientProduct) {
       throw new NotFoundException(`ClientProduct ${id} not found`);
     }
+    // Perform soft tenancy check via Client entity
+    await this.assertClientExists(clientProduct.clientId, companyId);
+
     return clientProduct;
   }
 
-  async getClientProductsByClient(clientId: string): Promise<ClientProduct[]> {
-    await this.assertClientExists(clientId);
+  async getClientProductsByClient(
+    clientId: string,
+    companyId: string,
+  ): Promise<ClientProduct[]> {
+    await this.assertClientExists(clientId, companyId);
     return this.clientProductRepository.findAllByClientId(clientId);
   }
 
   async getClientProductsByProduct(
     productId: string,
+    companyId: string,
   ): Promise<ClientProduct[]> {
-    await this.assertProductExists(productId);
+    await this.assertProductExists(productId, companyId);
     return this.clientProductRepository.findAllByProductId(productId);
   }
 
   async updateClientProduct(
     id: string,
     data: Partial<ClientProduct>,
+    companyId: string,
   ): Promise<ClientProduct> {
-    await this.getClientProductById(id); // asserts existence
-    if (data.clientId) await this.assertClientExists(data.clientId);
-    if (data.productId) await this.assertProductExists(data.productId);
+    await this.getClientProductById(id, companyId); // asserts existence
+    if (data.clientId) await this.assertClientExists(data.clientId, companyId);
+    if (data.productId)
+      await this.assertProductExists(data.productId, companyId);
 
     return this.clientProductRepository.update(id, data);
   }
 
-  async deleteClientProduct(id: string): Promise<void> {
-    await this.getClientProductById(id); // asserts existence
+  async deleteClientProduct(id: string, companyId: string): Promise<void> {
+    await this.getClientProductById(id, companyId); // asserts existence
     await this.clientProductRepository.delete(id);
   }
 }

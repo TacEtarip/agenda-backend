@@ -1,5 +1,6 @@
 export class Note {
   id!: string;
+  companyId?: string;
   clientId!: string;
   content!: string;
   createdAt!: Date;

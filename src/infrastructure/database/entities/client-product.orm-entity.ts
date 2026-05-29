@@ -40,15 +40,23 @@ export class ClientProductOrmEntity {
   productId!: string;
 
   // Relations
-  @ManyToOne(() => ClientOrmEntity, (client) => client.clientProducts, {
-    onDelete: 'CASCADE',
-  })
+  @ManyToOne(
+    () => ClientOrmEntity,
+    (client: ClientOrmEntity) => client.clientProducts,
+    {
+      onDelete: 'CASCADE',
+    },
+  )
   @JoinColumn({ name: 'client_id' })
   client!: ClientOrmEntity;
 
-  @ManyToOne(() => ProductOrmEntity, (product) => product.clientProducts, {
-    onDelete: 'CASCADE',
-  })
+  @ManyToOne(
+    () => ProductOrmEntity,
+    (product: ProductOrmEntity) => product.clientProducts,
+    {
+      onDelete: 'CASCADE',
+    },
+  )
   @JoinColumn({ name: 'product_id' })
   product!: ProductOrmEntity;
 }

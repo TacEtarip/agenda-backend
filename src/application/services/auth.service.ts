@@ -8,17 +8,49 @@ import { AUTH_PROVIDER } from '@domain/ports/auth.provider.interface';
 import type { IAuthProvider } from '@domain/ports/auth.provider.interface';
 import { USER_REPOSITORY } from '@domain/ports/user.repository.interface';
 import type { IUserRepository } from '@domain/ports/user.repository.interface';
+import { COMPANY_REPOSITORY } from '@domain/ports/company.repository.interface';
+import type { ICompanyRepository } from '@domain/ports/company.repository.interface';
 import { User } from '@domain/models/user.model';
 import type { RegisterDto } from '@infrastructure/http/dtos/auth/register.dto';
+import type { RegisterCompanyDto } from '@infrastructure/http/dtos/auth/register-company.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     @Inject(USER_REPOSITORY)
     private readonly userRepository: IUserRepository,
+    @Inject(COMPANY_REPOSITORY)
+    private readonly companyRepository: ICompanyRepository,
     @Inject(AUTH_PROVIDER)
     private readonly authProvider: IAuthProvider,
   ) {}
+
+  async registerCompany(
+    dto: RegisterCompanyDto,
+  ): Promise<{ accessToken: string }> {
+    const existing = await this.userRepository.findByEmail(dto.email);
+    if (existing) {
+      throw new ConflictException('A user with this email already exists');
+    }
+
+    // Create the Company
+    const company = await this.companyRepository.create({
+      name: dto.companyName,
+    });
+
+    const passwordHash = await this.authProvider.hashPassword(dto.password);
+
+    // Create the Admin User linked to the company
+    const user = await this.userRepository.create({
+      email: dto.email,
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      passwordHash,
+      companyId: company.id,
+    });
+
+    return this.authProvider.generateToken(user);
+  }
 
   async register(dto: RegisterDto): Promise<{ accessToken: string }> {
     const existing = await this.userRepository.findByEmail(dto.email);

@@ -1,5 +1,6 @@
 export class Attachment {
   id!: string;
+  companyId?: string;
   clientId!: string;
   fileName!: string;
   fileUrl!: string;

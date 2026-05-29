@@ -24,21 +24,31 @@ export class AppointmentRepository implements IAppointmentRepository {
     return ormEntity ? AppointmentMapper.toDomain(ormEntity) : null;
   }
 
-  async findAllByUserId(userId: string): Promise<Appointment[]> {
-    const ormEntities = await this.repository.find({ where: { userId } });
-    return ormEntities.map((entity) => AppointmentMapper.toDomain(entity));
+  async findAllByCompanyId(companyId: string): Promise<Appointment[]> {
+    const ormEntities = await this.repository.find({
+      where: { company: { id: companyId } },
+      relations: ['company'],
+    });
+    return ormEntities.map((entity: AppointmentOrmEntity) =>
+      AppointmentMapper.toDomain(entity),
+    );
   }
 
   async findAllByClientId(clientId: string): Promise<Appointment[]> {
-    const ormEntities = await this.repository.find({ where: { clientId } });
-    return ormEntities.map((entity) => AppointmentMapper.toDomain(entity));
+    const ormEntities = await this.repository.find({
+      where: { client: { id: clientId } },
+      relations: ['client'],
+    });
+    return ormEntities.map((entity: AppointmentOrmEntity) =>
+      AppointmentMapper.toDomain(entity),
+    );
   }
 
   async findUpcoming(from: Date, to: Date): Promise<Appointment[]> {
     const ormEntities = await this.repository.find({
       where: {
-        startTime: Between(from, to)
-      } // Here we might want to also filter by status (e.g., SCHEDULED or PENDING_PAYMENT)
+        startTime: Between(from, to),
+      }, // Here we might want to also filter by status (e.g., SCHEDULED or PENDING_PAYMENT)
     });
     return ormEntities.map((entity) => AppointmentMapper.toDomain(entity));
   }

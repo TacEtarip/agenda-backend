@@ -12,11 +12,17 @@ export class MessageTemplateService {
   ) {}
 
   async createTemplate(
+    companyId: string,
     userId: string,
     stage: ClientStage,
     messageBody: string,
   ): Promise<MessageTemplate> {
-    const newTemplate = new MessageTemplate({ userId, stage, messageBody });
+    const newTemplate = new MessageTemplate({
+      companyId,
+      userId,
+      stage,
+      messageBody,
+    });
     return this.templateRepository.create(newTemplate);
   }
 
@@ -40,8 +46,8 @@ export class MessageTemplateService {
     return template;
   }
 
-  async getTemplatesByUserId(userId: string): Promise<MessageTemplate[]> {
-    return this.templateRepository.findByUserId(userId);
+  async getTemplatesByCompany(companyId: string): Promise<MessageTemplate[]> {
+    return this.templateRepository.findByCompanyId(companyId);
   }
 
   async deleteTemplate(id: string): Promise<boolean> {

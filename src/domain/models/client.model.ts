@@ -2,6 +2,7 @@ import { ClientStage } from '../enums/client-stage.enum';
 
 export class Client {
   id!: string;
+  companyId?: string;
   userId!: string;
   firstName!: string;
   lastName!: string;

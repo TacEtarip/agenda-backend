@@ -1,5 +1,6 @@
 export class Product {
   id!: string;
+  companyId?: string;
   userId!: string;
   name!: string;
   createdAt!: Date;

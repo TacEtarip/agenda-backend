@@ -5,7 +5,7 @@ export const MESSAGE_TEMPLATE_REPOSITORY = 'MESSAGE_TEMPLATE_REPOSITORY';
 export interface IMessageTemplateRepository {
   create(template: MessageTemplate): Promise<MessageTemplate>;
   findById(id: string): Promise<MessageTemplate | null>;
-  findByUserId(userId: string): Promise<MessageTemplate[]>;
+  findByCompanyId(companyId: string): Promise<MessageTemplate[]>;
   update(
     id: string,
     updates: Partial<MessageTemplate>,

@@ -8,12 +8,23 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { UserOrmEntity } from './user.orm-entity';
+import { CompanyOrmEntity } from './company.orm-entity';
 import { ClientProductOrmEntity } from './client-product.orm-entity';
 
 @Entity('products')
 export class ProductOrmEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
+
+  @Column({ name: 'company_id', nullable: true })
+  companyId!: string;
+
+  @ManyToOne(
+    () => CompanyOrmEntity,
+    (company: CompanyOrmEntity) => company.products,
+  )
+  @JoinColumn({ name: 'company_id' })
+  company!: CompanyOrmEntity;
 
   @Column()
   name!: string;

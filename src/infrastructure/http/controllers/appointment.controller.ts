@@ -13,6 +13,8 @@ import {
 } from '@nestjs/common';
 import { AppointmentService } from '@application/services/appointment.service';
 import { JwtAuthGuard } from '@infrastructure/auth/guards/jwt-auth.guard';
+import { CurrentUser } from '@infrastructure/auth/decorators/current-user.decorator';
+import type { JwtPayload } from '@infrastructure/auth/strategies/jwt.strategy';
 import { CreateAppointmentDto } from '../dtos/appointment/create-appointment.dto';
 import { UpdateAppointmentDto } from '../dtos/appointment/update-appointment.dto';
 
@@ -22,21 +24,25 @@ export class AppointmentController {
   constructor(private readonly appointmentService: AppointmentService) {}
 
   @Post()
-  create(@Body() dto: CreateAppointmentDto) {
+  create(@Body() dto: CreateAppointmentDto, @CurrentUser() user: JwtPayload) {
     const { requestPaymentLink, ...appointmentData } = dto;
     return this.appointmentService.createAppointment(
       {
         ...appointmentData,
         startTime: new Date(appointmentData.startTime),
         endTime: new Date(appointmentData.endTime),
+        companyId: user.companyId,
+        userId: user.sub,
       },
       requestPaymentLink,
     );
   }
 
-  @Get('user/:userId')
-  findAllByUser(@Param('userId', ParseUUIDPipe) userId: string) {
-    return this.appointmentService.getAppointmentsByUser(userId);
+  @Get()
+  findAllByCompany(@CurrentUser() user: JwtPayload) {
+    return this.appointmentService.getAppointmentsByCompany(
+      user.companyId || '',
+    );
   }
 
   @Get('client/:clientId')

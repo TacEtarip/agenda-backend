@@ -9,12 +9,23 @@ import {
   OneToMany,
 } from 'typeorm';
 import { ClientOrmEntity } from './client.orm-entity';
+import { CompanyOrmEntity } from './company.orm-entity';
 import { AttachmentOrmEntity } from './attachment.orm-entity';
 
 @Entity('notes')
 export class NoteOrmEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
+
+  @Column({ name: 'company_id', nullable: true })
+  companyId!: string;
+
+  @ManyToOne(
+    () => CompanyOrmEntity,
+    (company: CompanyOrmEntity) => company.notes,
+  )
+  @JoinColumn({ name: 'company_id' })
+  company!: CompanyOrmEntity;
 
   @Column({ type: 'text' })
   content!: string;

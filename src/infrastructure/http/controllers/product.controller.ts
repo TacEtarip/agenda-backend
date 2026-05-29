@@ -13,6 +13,8 @@ import {
 } from '@nestjs/common';
 import { ProductService } from '@application/services/product.service';
 import { JwtAuthGuard } from '@infrastructure/auth/guards/jwt-auth.guard';
+import { CurrentUser } from '@infrastructure/auth/decorators/current-user.decorator';
+import type { JwtPayload } from '@infrastructure/auth/strategies/jwt.strategy';
 import { CreateProductDto } from '../dtos/product/create-product.dto';
 import { UpdateProductDto } from '../dtos/product/update-product.dto';
 
@@ -22,13 +24,16 @@ export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   @Post()
-  create(@Body() dto: CreateProductDto) {
-    return this.productService.createProduct(dto);
+  create(@Body() dto: CreateProductDto, @CurrentUser() user: JwtPayload) {
+    return this.productService.createProduct({
+      ...dto,
+      companyId: user.companyId,
+    });
   }
 
-  @Get('user/:userId')
-  findAllByUser(@Param('userId', ParseUUIDPipe) userId: string) {
-    return this.productService.getProductsByUser(userId);
+  @Get()
+  findAllByCompany(@CurrentUser() user: JwtPayload) {
+    return this.productService.getProductsByCompany(user.companyId || '');
   }
 
   @Get(':id')

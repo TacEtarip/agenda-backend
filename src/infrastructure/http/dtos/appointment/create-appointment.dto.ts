@@ -12,9 +12,6 @@ export class CreateAppointmentDto {
   @IsUUID()
   clientId!: string;
 
-  @IsUUID()
-  userId!: string;
-
   @IsString()
   @IsNotEmpty()
   title!: string;

@@ -8,11 +8,22 @@ import {
 } from 'typeorm';
 import { ClientOrmEntity } from './client.orm-entity';
 import { NoteOrmEntity } from './note.orm-entity';
+import { CompanyOrmEntity } from './company.orm-entity';
 
 @Entity('attachments')
 export class AttachmentOrmEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
+
+  @Column({ name: 'company_id', nullable: true })
+  companyId!: string;
+
+  @ManyToOne(
+    () => CompanyOrmEntity,
+    (company: CompanyOrmEntity) => company.attachments,
+  )
+  @JoinColumn({ name: 'company_id' })
+  company!: CompanyOrmEntity;
 
   @Column({ name: 'file_name' })
   fileName!: string;
@@ -34,13 +45,17 @@ export class AttachmentOrmEntity {
   noteId!: string;
 
   // Relations
-  @ManyToOne(() => ClientOrmEntity, (client) => client.attachments, {
-    onDelete: 'CASCADE',
-  })
+  @ManyToOne(
+    () => ClientOrmEntity,
+    (client: ClientOrmEntity) => client.attachments,
+    {
+      onDelete: 'CASCADE',
+    },
+  )
   @JoinColumn({ name: 'client_id' })
   client!: ClientOrmEntity;
 
-  @ManyToOne(() => NoteOrmEntity, (note) => note.attachments, {
+  @ManyToOne(() => NoteOrmEntity, (note: NoteOrmEntity) => note.attachments, {
     onDelete: 'SET NULL',
     nullable: true,
   })

@@ -19,7 +19,11 @@ export class AuthProviderService implements IAuthProvider {
   }
 
   generateToken(user: User): { accessToken: string } {
-    const payload = { sub: user.id, email: user.email };
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      companyId: user.companyId,
+    };
     return { accessToken: this.jwtService.sign(payload) };
   }
 }

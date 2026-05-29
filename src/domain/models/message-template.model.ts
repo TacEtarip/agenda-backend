@@ -2,6 +2,7 @@ import { ClientStage } from '../enums/client-stage.enum';
 
 export class MessageTemplate {
   id!: string;
+  companyId?: string;
   userId!: string;
   stage!: ClientStage;
   messageBody!: string;

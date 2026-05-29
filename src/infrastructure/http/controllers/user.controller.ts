@@ -43,7 +43,10 @@ export class UserController {
     @Request() req: Express.Request & { user: { userId: string } },
     @Body() updateSettingsDto: UpdateUserSettingsDto,
   ) {
-    const user = await this.userService.updateUserSettings(req.user.userId, updateSettingsDto);
+    const user = await this.userService.updateUserSettings(
+      req.user.userId,
+      updateSettingsDto,
+    );
     return {
       message: 'Settings updated successfully',
       settings: {

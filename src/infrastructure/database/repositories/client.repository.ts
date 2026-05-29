@@ -26,7 +26,16 @@ export class ClientRepository implements IClientRepository {
 
   async findAllByUserId(userId: string): Promise<Client[]> {
     const ormEntities = await this.repository.find({ where: { userId } });
-    return ormEntities.map((entity) => ClientMapper.toDomain(entity));
+    return ormEntities.map((entity: ClientOrmEntity) =>
+      ClientMapper.toDomain(entity),
+    );
+  }
+
+  async findAllByCompanyId(companyId: string): Promise<Client[]> {
+    const ormEntities = await this.repository.find({ where: { companyId } });
+    return ormEntities.map((entity: ClientOrmEntity) =>
+      ClientMapper.toDomain(entity),
+    );
   }
 
   async update(id: string, client: Partial<Client>): Promise<Client> {

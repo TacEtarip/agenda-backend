@@ -5,6 +5,7 @@ export class ClientMapper {
   static toDomain(ormEntity: ClientOrmEntity): Client {
     return new Client({
       id: ormEntity.id,
+      companyId: ormEntity.companyId,
       userId: ormEntity.userId,
       firstName: ormEntity.firstName,
       lastName: ormEntity.lastName,
@@ -18,6 +19,8 @@ export class ClientMapper {
   static toOrmEntity(domainClient: Partial<Client>): ClientOrmEntity {
     const ormEntity = new ClientOrmEntity();
     if (domainClient.id) ormEntity.id = domainClient.id;
+    if (domainClient.companyId !== undefined)
+      ormEntity.companyId = domainClient.companyId!;
     if (domainClient.userId) ormEntity.userId = domainClient.userId;
     if (domainClient.firstName) ormEntity.firstName = domainClient.firstName;
     if (domainClient.lastName) ormEntity.lastName = domainClient.lastName;

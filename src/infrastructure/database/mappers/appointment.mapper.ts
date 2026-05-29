@@ -5,6 +5,7 @@ export class AppointmentMapper {
   static toDomain(ormEntity: AppointmentOrmEntity): Appointment {
     return new Appointment({
       id: ormEntity.id,
+      companyId: ormEntity.companyId,
       clientId: ormEntity.clientId,
       userId: ormEntity.userId,
       title: ormEntity.title,
@@ -24,6 +25,8 @@ export class AppointmentMapper {
   ): AppointmentOrmEntity {
     const ormEntity = new AppointmentOrmEntity();
     if (domainAppointment.id) ormEntity.id = domainAppointment.id;
+    if (domainAppointment.companyId !== undefined)
+      ormEntity.companyId = domainAppointment.companyId!;
     if (domainAppointment.clientId)
       ormEntity.clientId = domainAppointment.clientId;
     if (domainAppointment.userId) ormEntity.userId = domainAppointment.userId;

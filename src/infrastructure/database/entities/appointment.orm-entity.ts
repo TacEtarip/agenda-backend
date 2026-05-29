@@ -8,11 +8,22 @@ import {
 import { AppointmentStatus } from '@domain/enums/appointment-status.enum';
 import { ClientOrmEntity } from './client.orm-entity';
 import { UserOrmEntity } from './user.orm-entity';
+import { CompanyOrmEntity } from './company.orm-entity';
 
 @Entity('appointments')
 export class AppointmentOrmEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
+
+  @Column({ name: 'company_id', nullable: true })
+  companyId!: string;
+
+  @ManyToOne(
+    () => CompanyOrmEntity,
+    (company: CompanyOrmEntity) => company.appointments,
+  )
+  @JoinColumn({ name: 'company_id' })
+  company!: CompanyOrmEntity;
 
   @Column()
   title!: string;

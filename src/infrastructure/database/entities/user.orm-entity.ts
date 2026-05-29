@@ -4,15 +4,28 @@ import {
   Column,
   CreateDateColumn,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { ClientOrmEntity } from './client.orm-entity';
 import { AppointmentOrmEntity } from './appointment.orm-entity';
 import { ProductOrmEntity } from './product.orm-entity';
+import { CompanyOrmEntity } from './company.orm-entity';
 
 @Entity('users')
 export class UserOrmEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
+
+  @Column({ name: 'company_id', nullable: true })
+  companyId!: string;
+
+  @ManyToOne(
+    () => CompanyOrmEntity,
+    (company: CompanyOrmEntity) => company.users,
+  )
+  @JoinColumn({ name: 'company_id' })
+  company!: CompanyOrmEntity;
 
   @Column({ unique: true })
   email!: string;

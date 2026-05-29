@@ -19,11 +19,11 @@ export class TemplateRendererService {
     if (variables.name) {
       message = message.replace(/\{\{name\}\}/gi, variables.name);
     }
-    
+
     if (variables.paymentUrl) {
       message = message.replace(/\{\{paymentUrl\}\}/gi, variables.paymentUrl);
     }
-    
+
     if (variables.date) {
       message = message.replace(/\{\{date\}\}/gi, variables.date);
     }

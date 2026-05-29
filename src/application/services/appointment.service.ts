@@ -79,8 +79,8 @@ export class AppointmentService {
         if (!user) throw new Error('Usuario emisor no encontrado');
 
         // Buscar plantilla para FOLLOW_UP o FIRST_CONTACT
-        const userTemplates = await this.templateRepository.findByUserId(
-          user.id,
+        const userTemplates = await this.templateRepository.findByCompanyId(
+          appointment.companyId || user.companyId || '',
         );
         const template =
           userTemplates.find((t) => t.stage === ClientStage.FIRST_CONTACT) ||
@@ -116,13 +116,13 @@ export class AppointmentService {
     return appointment;
   }
 
-  async getAppointmentsByUser(userId: string): Promise<Appointment[]> {
-    return this.appointmentRepository.findAllByUserId(userId);
+  async getAppointmentsByCompany(companyId: string): Promise<Appointment[]> {
+    return await this.appointmentRepository.findAllByCompanyId(companyId);
   }
 
   async getAppointmentsByClient(clientId: string): Promise<Appointment[]> {
     await this.getClientAssertExists(clientId);
-    return this.appointmentRepository.findAllByClientId(clientId);
+    return await this.appointmentRepository.findAllByClientId(clientId);
   }
 
   async updateAppointment(

@@ -25,13 +25,23 @@ export class ClientProductRepository implements IClientProductRepository {
   }
 
   async findAllByClientId(clientId: string): Promise<ClientProduct[]> {
-    const ormEntities = await this.repository.find({ where: { clientId } });
-    return ormEntities.map((entity) => ClientProductMapper.toDomain(entity));
+    const ormEntities = await this.repository.find({
+      where: { client: { id: clientId } },
+      relations: ['client', 'product'],
+    });
+    return ormEntities.map((entity: ClientProductOrmEntity) =>
+      ClientProductMapper.toDomain(entity),
+    );
   }
 
   async findAllByProductId(productId: string): Promise<ClientProduct[]> {
-    const ormEntities = await this.repository.find({ where: { productId } });
-    return ormEntities.map((entity) => ClientProductMapper.toDomain(entity));
+    const ormEntities = await this.repository.find({
+      where: { product: { id: productId } },
+      relations: ['client', 'product'],
+    });
+    return ormEntities.map((entity: ClientProductOrmEntity) =>
+      ClientProductMapper.toDomain(entity),
+    );
   }
 
   async update(

@@ -9,11 +9,22 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { StageOrmEntity } from './stage.orm-entity';
+import { CompanyOrmEntity } from './company.orm-entity';
 
 @Entity('message_templates')
 export class MessageTemplateOrmEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
+
+  @Column({ name: 'company_id', nullable: true })
+  companyId!: string;
+
+  @ManyToOne(
+    () => CompanyOrmEntity,
+    (company: CompanyOrmEntity) => company.messageTemplates,
+  )
+  @JoinColumn({ name: 'company_id' })
+  company!: CompanyOrmEntity;
 
   @Column({ name: 'user_id', type: 'uuid' })
   userId!: string;

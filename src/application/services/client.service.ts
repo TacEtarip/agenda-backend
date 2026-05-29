@@ -29,11 +29,15 @@ export class ClientService {
   }
 
   async getClient(id: string): Promise<Client | null> {
-    return this.clientRepository.findById(id);
+    return await this.clientRepository.findById(id);
   }
 
   async getClientsByUser(userId: string): Promise<Client[]> {
-    return this.clientRepository.findAllByUserId(userId);
+    return await this.clientRepository.findAllByUserId(userId);
+  }
+
+  async getClientsByCompany(companyId: string): Promise<Client[]> {
+    return await this.clientRepository.findAllByCompanyId(companyId);
   }
 
   async updateClient(id: string, data: Partial<Client>): Promise<Client> {
