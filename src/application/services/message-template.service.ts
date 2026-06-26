@@ -29,18 +29,19 @@ export class MessageTemplateService {
   async updateTemplate(
     id: string,
     updates: Partial<Pick<MessageTemplate, 'stage' | 'messageBody'>>,
+    companyId: string,
   ): Promise<MessageTemplate> {
     const template = await this.templateRepository.findById(id);
-    if (!template) {
+    if (!template || template.companyId !== companyId) {
       throw new NotFoundException(`MessageTemplate with ID ${id} not found`);
     }
 
     return this.templateRepository.update(id, updates);
   }
 
-  async getTemplateById(id: string): Promise<MessageTemplate> {
+  async getTemplateById(id: string, companyId: string): Promise<MessageTemplate> {
     const template = await this.templateRepository.findById(id);
-    if (!template) {
+    if (!template || template.companyId !== companyId) {
       throw new NotFoundException(`MessageTemplate with ID ${id} not found`);
     }
     return template;
@@ -50,7 +51,8 @@ export class MessageTemplateService {
     return this.templateRepository.findByCompanyId(companyId);
   }
 
-  async deleteTemplate(id: string): Promise<boolean> {
+  async deleteTemplate(id: string, companyId: string): Promise<boolean> {
+    await this.getTemplateById(id, companyId);
     return this.templateRepository.delete(id);
   }
 }

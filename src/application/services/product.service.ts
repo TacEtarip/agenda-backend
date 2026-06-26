@@ -15,9 +15,11 @@ export class ProductService {
     return this.productRepository.create(data);
   }
 
-  async getProductById(id: string): Promise<Product> {
+  async getProductById(id: string, companyId: string): Promise<Product> {
     const product = await this.productRepository.findById(id);
-    if (!product) throw new NotFoundException(`Product ${id} not found`);
+    if (!product || product.companyId !== companyId) {
+      throw new NotFoundException(`Product ${id} not found`);
+    }
     return product;
   }
 
@@ -25,13 +27,17 @@ export class ProductService {
     return this.productRepository.findAllByCompanyId(companyId);
   }
 
-  async updateProduct(id: string, data: Partial<Product>): Promise<Product> {
-    await this.getProductById(id); // asserts existence
-    return this.productRepository.update(id, data);
+  async updateProduct(
+    id: string,
+    data: Partial<Product>,
+    companyId: string,
+  ): Promise<Product> {
+    await this.getProductById(id, companyId); // asserts ownership
+    return this.productRepository.update(id, { ...data, companyId });
   }
 
-  async deleteProduct(id: string): Promise<void> {
-    await this.getProductById(id); // asserts existence
+  async deleteProduct(id: string, companyId: string): Promise<void> {
+    await this.getProductById(id, companyId); // asserts ownership
     await this.productRepository.delete(id);
   }
 }

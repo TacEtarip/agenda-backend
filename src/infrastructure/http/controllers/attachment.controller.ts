@@ -13,7 +13,7 @@ import {
 import { AttachmentService } from '@application/services/attachment.service';
 import { JwtAuthGuard } from '@infrastructure/auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@infrastructure/auth/decorators/current-user.decorator';
-import type { JwtPayload } from '@infrastructure/auth/strategies/jwt.strategy';
+import type { AuthenticatedUser } from '@infrastructure/auth/strategies/jwt.strategy';
 import { CreateAttachmentDto } from '../dtos/attachment/create-attachment.dto';
 import { Attachment } from '@domain/models/attachment.model';
 
@@ -25,7 +25,7 @@ export class AttachmentController {
   @Post()
   create(
     @Body() dto: CreateAttachmentDto,
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<Attachment> {
     return this.attachmentService.createAttachment({
       ...dto,
@@ -36,7 +36,7 @@ export class AttachmentController {
   @Get('client/:clientId')
   findAllByClient(
     @Param('clientId', ParseUUIDPipe) clientId: string,
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<Attachment[]> {
     return this.attachmentService.getAttachmentsByClient(
       clientId,
@@ -47,7 +47,7 @@ export class AttachmentController {
   @Get('note/:noteId')
   findAllByNote(
     @Param('noteId', ParseUUIDPipe) noteId: string,
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<Attachment[]> {
     return this.attachmentService.getAttachmentsByNote(
       noteId,
@@ -58,7 +58,7 @@ export class AttachmentController {
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<Attachment> {
     return this.attachmentService.getAttachmentById(id, user.companyId || '');
   }
@@ -67,7 +67,7 @@ export class AttachmentController {
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<void> {
     return this.attachmentService.deleteAttachment(id, user.companyId || '');
   }

@@ -14,7 +14,7 @@ import {
 import { ProductService } from '@application/services/product.service';
 import { JwtAuthGuard } from '@infrastructure/auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@infrastructure/auth/decorators/current-user.decorator';
-import type { JwtPayload } from '@infrastructure/auth/strategies/jwt.strategy';
+import type { AuthenticatedUser } from '@infrastructure/auth/strategies/jwt.strategy';
 import { CreateProductDto } from '../dtos/product/create-product.dto';
 import { UpdateProductDto } from '../dtos/product/update-product.dto';
 
@@ -24,7 +24,7 @@ export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   @Post()
-  create(@Body() dto: CreateProductDto, @CurrentUser() user: JwtPayload) {
+  create(@Body() dto: CreateProductDto, @CurrentUser() user: AuthenticatedUser) {
     return this.productService.createProduct({
       ...dto,
       companyId: user.companyId,
@@ -32,26 +32,33 @@ export class ProductController {
   }
 
   @Get()
-  findAllByCompany(@CurrentUser() user: JwtPayload) {
+  findAllByCompany(@CurrentUser() user: AuthenticatedUser) {
     return this.productService.getProductsByCompany(user.companyId || '');
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.productService.getProductById(id);
+  findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.productService.getProductById(id, user.companyId || '');
   }
 
   @Put(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateProductDto,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.productService.updateProduct(id, dto);
+    return this.productService.updateProduct(id, dto, user.companyId || '');
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.productService.deleteProduct(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.productService.deleteProduct(id, user.companyId || '');
   }
 }

@@ -18,18 +18,23 @@ export class ClientService {
     if (!data.userId) {
       throw new Error('User ID is required to create a client');
     }
+    if (!data.companyId) {
+      throw new Error('Company ID is required to create a client');
+    }
 
     // Verify if the associated professional (user) exists
     const user = await this.userRepository.findById(data.userId);
-    if (!user) {
+    if (!user || user.companyId !== data.companyId) {
       throw new NotFoundException('User not found');
     }
 
     return this.clientRepository.create(data);
   }
 
-  async getClient(id: string): Promise<Client | null> {
-    return await this.clientRepository.findById(id);
+  async getClient(id: string, companyId: string): Promise<Client | null> {
+    const client = await this.clientRepository.findById(id);
+    if (!client || client.companyId !== companyId) return null;
+    return client;
   }
 
   async getClientsByUser(userId: string): Promise<Client[]> {
@@ -40,18 +45,22 @@ export class ClientService {
     return await this.clientRepository.findAllByCompanyId(companyId);
   }
 
-  async updateClient(id: string, data: Partial<Client>): Promise<Client> {
+  async updateClient(
+    id: string,
+    data: Partial<Client>,
+    companyId: string,
+  ): Promise<Client> {
     const existingClient = await this.clientRepository.findById(id);
-    if (!existingClient) {
+    if (!existingClient || existingClient.companyId !== companyId) {
       throw new NotFoundException(`Client with ID ${id} not found`);
     }
 
-    return this.clientRepository.update(id, data);
+    return this.clientRepository.update(id, { ...data, companyId });
   }
 
-  async deleteClient(id: string): Promise<void> {
+  async deleteClient(id: string, companyId: string): Promise<void> {
     const existingClient = await this.clientRepository.findById(id);
-    if (!existingClient) {
+    if (!existingClient || existingClient.companyId !== companyId) {
       throw new NotFoundException(`Client with ID ${id} not found`);
     }
 

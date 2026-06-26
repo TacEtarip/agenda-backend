@@ -16,12 +16,14 @@ import { ProductModule } from '@infrastructure/modules/product.module';
 import { ClientProductModule } from '@infrastructure/modules/client-product.module';
 import { MessagingModule } from '@infrastructure/messaging/messaging.module';
 import { PaymentModule } from '@infrastructure/payments/payment.module';
+import { validateEnv } from './config/env.validation';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+      validate: validateEnv,
     }),
     ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
@@ -29,13 +31,13 @@ import { PaymentModule } from '@infrastructure/payments/payment.module';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        host: configService.get<string>('DB_HOST'),
-        port: configService.get<number>('DB_PORT'),
-        username: configService.get<string>('DB_USER'),
-        password: configService.get<string>('DB_PASSWORD'),
-        database: configService.get<string>('DB_NAME'),
+        host: configService.getOrThrow<string>('DB_HOST'),
+        port: Number(configService.getOrThrow<string>('DB_PORT')),
+        username: configService.getOrThrow<string>('DB_USER'),
+        password: configService.getOrThrow<string>('DB_PASSWORD'),
+        database: configService.getOrThrow<string>('DB_NAME'),
         autoLoadEntities: true, // Automatically loads entities registered via TypeOrmModule.forFeature in feature modules
-        synchronize: true, // Only for development/MVP purposes. Disable in prod.
+        synchronize: configService.get<string>('TYPEORM_SYNC') === 'true',
       }),
     }),
     DatabaseModule, // Injects all domain repository providers

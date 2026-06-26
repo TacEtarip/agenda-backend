@@ -14,7 +14,7 @@ import {
 import { ClientProductService } from '@application/services/client-product.service';
 import { JwtAuthGuard } from '@infrastructure/auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@infrastructure/auth/decorators/current-user.decorator';
-import type { JwtPayload } from '@infrastructure/auth/strategies/jwt.strategy';
+import type { AuthenticatedUser } from '@infrastructure/auth/strategies/jwt.strategy';
 import { CreateClientProductDto } from '../dtos/client-product/create-client-product.dto';
 import { UpdateClientProductDto } from '../dtos/client-product/update-client-product.dto';
 import { ClientProduct } from '@domain/models/client-product.model';
@@ -27,7 +27,7 @@ export class ClientProductController {
   @Post()
   create(
     @Body() dto: CreateClientProductDto,
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<ClientProduct> {
     return this.clientProductService.createClientProduct(
       dto,
@@ -38,7 +38,7 @@ export class ClientProductController {
   @Get('client/:clientId')
   findAllByClient(
     @Param('clientId', ParseUUIDPipe) clientId: string,
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<ClientProduct[]> {
     return this.clientProductService.getClientProductsByClient(
       clientId,
@@ -49,7 +49,7 @@ export class ClientProductController {
   @Get('product/:productId')
   findAllByProduct(
     @Param('productId', ParseUUIDPipe) productId: string,
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<ClientProduct[]> {
     return this.clientProductService.getClientProductsByProduct(
       productId,
@@ -60,7 +60,7 @@ export class ClientProductController {
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<ClientProduct> {
     return this.clientProductService.getClientProductById(
       id,
@@ -72,7 +72,7 @@ export class ClientProductController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateClientProductDto,
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<ClientProduct> {
     return this.clientProductService.updateClientProduct(
       id,
@@ -85,7 +85,7 @@ export class ClientProductController {
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: AuthenticatedUser,
   ): Promise<void> {
     return this.clientProductService.deleteClientProduct(
       id,

@@ -8,39 +8,51 @@ import {
   Request,
   UseGuards,
   NotFoundException,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { UserService } from '@application/services/user.service';
 import { CreateUserDto } from '../dtos/user/create-user.dto';
 import { UpdateUserSettingsDto } from '../dtos/user/update-user-settings.dto';
 import { JwtAuthGuard } from '@infrastructure/auth/guards/jwt-auth.guard';
+import { CurrentUser } from '@infrastructure/auth/decorators/current-user.decorator';
+import type { AuthenticatedUser } from '@infrastructure/auth/strategies/jwt.strategy';
+import { UserResponseDto } from '../dtos/user/user-response.dto';
 
+@UseGuards(JwtAuthGuard)
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post()
-  async create(@Body() createUserDto: CreateUserDto) {
-    const user = await this.userService.createUser(createUserDto);
-    // Ideally we don't expose password hashes or sensitive info directly down the line.
+  async create(
+    @Body() createUserDto: CreateUserDto,
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ) {
+    const user = await this.userService.createUser({
+      ...createUserDto,
+      companyId: currentUser.companyId,
+    });
     return {
       message: 'User created successfully',
-      user,
+      user: UserResponseDto.fromDomain(user),
     };
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    const user = await this.userService.getUser(id);
+  async findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() currentUser: AuthenticatedUser,
+  ) {
+    const user = await this.userService.getUser(id, currentUser.companyId);
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    return user;
+    return UserResponseDto.fromDomain(user);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Patch('me/settings')
   async updateSettings(
-    @Request() req: Express.Request & { user: { userId: string } },
+    @Request() req: Express.Request & { user: AuthenticatedUser },
     @Body() updateSettingsDto: UpdateUserSettingsDto,
   ) {
     const user = await this.userService.updateUserSettings(
@@ -55,7 +67,6 @@ export class UserController {
         syncContacts: user.syncContacts,
         sendDailyDigest: user.sendDailyDigest,
         paymentEnabled: user.paymentEnabled,
-        paymentGatewayKey: user.paymentGatewayKey,
       },
     };
   }

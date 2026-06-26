@@ -35,9 +35,14 @@ export class AppointmentService {
     private readonly templateRenderer: TemplateRendererService,
   ) {}
 
-  private async getClientAssertExists(clientId: string): Promise<Client> {
+  private async getClientAssertExists(
+    clientId: string,
+    companyId?: string,
+  ): Promise<Client> {
     const client = await this.clientRepository.findById(clientId);
-    if (!client) throw new NotFoundException(`Client ${clientId} not found`);
+    if (!client || (companyId && client.companyId !== companyId)) {
+      throw new NotFoundException(`Client ${clientId} not found`);
+    }
     return client;
   }
 
@@ -47,8 +52,15 @@ export class AppointmentService {
   ): Promise<Appointment> {
     if (!data.clientId) throw new Error('clientId is required');
     if (!data.userId) throw new Error('userId is required');
-    const client = await this.getClientAssertExists(data.clientId);
+    if (!data.companyId) throw new Error('companyId is required');
+    const client = await this.getClientAssertExists(
+      data.clientId,
+      data.companyId,
+    );
     const user = await this.userRepository.findById(data.userId);
+    if (!user || user.companyId !== data.companyId) {
+      throw new NotFoundException(`User ${data.userId} not found`);
+    }
 
     const appointment = await this.appointmentRepository.create(data);
 
@@ -109,9 +121,12 @@ export class AppointmentService {
     return appointment;
   }
 
-  async getAppointmentById(id: string): Promise<Appointment> {
+  async getAppointmentById(
+    id: string,
+    companyId: string,
+  ): Promise<Appointment> {
     const appointment = await this.appointmentRepository.findById(id);
-    if (!appointment)
+    if (!appointment || appointment.companyId !== companyId)
       throw new NotFoundException(`Appointment ${id} not found`);
     return appointment;
   }
@@ -120,21 +135,25 @@ export class AppointmentService {
     return await this.appointmentRepository.findAllByCompanyId(companyId);
   }
 
-  async getAppointmentsByClient(clientId: string): Promise<Appointment[]> {
-    await this.getClientAssertExists(clientId);
+  async getAppointmentsByClient(
+    clientId: string,
+    companyId: string,
+  ): Promise<Appointment[]> {
+    await this.getClientAssertExists(clientId, companyId);
     return await this.appointmentRepository.findAllByClientId(clientId);
   }
 
   async updateAppointment(
     id: string,
     data: Partial<Appointment>,
+    companyId: string,
   ): Promise<Appointment> {
-    await this.getAppointmentById(id); // asserts existence
-    return this.appointmentRepository.update(id, data);
+    await this.getAppointmentById(id, companyId); // asserts ownership
+    return this.appointmentRepository.update(id, { ...data, companyId });
   }
 
-  async deleteAppointment(id: string): Promise<void> {
-    await this.getAppointmentById(id); // asserts existence
+  async deleteAppointment(id: string, companyId: string): Promise<void> {
+    await this.getAppointmentById(id, companyId); // asserts ownership
     await this.appointmentRepository.delete(id);
   }
 }

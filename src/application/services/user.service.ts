@@ -23,8 +23,11 @@ export class UserService {
     return this.userRepository.create(data);
   }
 
-  async getUser(id: string): Promise<User | null> {
-    return this.userRepository.findById(id);
+  async getUser(id: string, companyId?: string): Promise<User | null> {
+    const user = await this.userRepository.findById(id);
+    if (!user) return null;
+    if (companyId && user.companyId !== companyId) return null;
+    return user;
   }
 
   async updateUserSettings(id: string, data: Partial<User>): Promise<User> {

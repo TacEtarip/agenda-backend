@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '@infrastructure/auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@infrastructure/auth/decorators/current-user.decorator';
-import type { JwtPayload } from '@infrastructure/auth/strategies/jwt.strategy';
+import type { AuthenticatedUser } from '@infrastructure/auth/strategies/jwt.strategy';
 import { MessageTemplateService } from '@application/services/message-template.service';
 import { UpsertMessageTemplateDto } from '../dtos/message-template/upsert-template.dto';
 import { UpdateMessageTemplateDto } from '../dtos/message-template/update-template.dto';
@@ -26,11 +26,11 @@ export class MessageTemplateController {
   @Post()
   async createTemplate(
     @Body() dto: UpsertMessageTemplateDto,
-    @CurrentUser() user: JwtPayload,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.messageTemplateService.createTemplate(
       user.companyId || '',
-      user.sub,
+      user.userId,
       dto.stage,
       dto.messageBody,
     );
@@ -40,24 +40,41 @@ export class MessageTemplateController {
   async updateTemplate(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateMessageTemplateDto,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.messageTemplateService.updateTemplate(id, dto);
+    return this.messageTemplateService.updateTemplate(
+      id,
+      dto,
+      user.companyId || '',
+    );
   }
 
   @Get()
-  async getTemplatesByCompany(@CurrentUser() user: JwtPayload) {
+  async getTemplatesByCompany(@CurrentUser() user: AuthenticatedUser) {
     return this.messageTemplateService.getTemplatesByCompany(
       user.companyId || '',
     );
   }
 
   @Get(':id')
-  async getTemplateById(@Param('id', ParseUUIDPipe) id: string) {
-    return this.messageTemplateService.getTemplateById(id);
+  async getTemplateById(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.messageTemplateService.getTemplateById(
+      id,
+      user.companyId || '',
+    );
   }
 
   @Delete(':id')
-  async deleteTemplate(@Param('id', ParseUUIDPipe) id: string) {
-    return this.messageTemplateService.deleteTemplate(id);
+  async deleteTemplate(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.messageTemplateService.deleteTemplate(
+      id,
+      user.companyId || '',
+    );
   }
 }
