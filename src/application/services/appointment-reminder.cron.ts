@@ -9,6 +9,9 @@ import type { IMessageTemplateRepository } from '@domain/ports/message-template.
 import { MESSAGE_TEMPLATE_REPOSITORY } from '@domain/ports/message-template.repository.interface';
 import type { IMessagingProvider } from '@domain/ports/messaging.provider.interface';
 import { MESSAGING_PROVIDER } from '@domain/ports/messaging.provider.interface';
+import { PaymentSourceType } from '@domain/enums/payment-source-type.enum';
+import type { IPaymentRepository } from '@domain/ports/payment.repository.interface';
+import { PAYMENT_REPOSITORY } from '@domain/ports/payment.repository.interface';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { TemplateRendererService } from './template-renderer.service';
@@ -26,6 +29,8 @@ export class AppointmentReminderCron {
     private readonly messagingProvider: IMessagingProvider,
     @Inject(MESSAGE_TEMPLATE_REPOSITORY)
     private readonly templateRepository: IMessageTemplateRepository,
+    @Inject(PAYMENT_REPOSITORY)
+    private readonly paymentRepository: IPaymentRepository,
     private readonly templateRenderer: TemplateRendererService,
   ) {}
 
@@ -65,9 +70,13 @@ export class AppointmentReminderCron {
         let message = `Hola ${client.firstName}, te recordamos que tienes una cita programada para mañana a las ${appt.startTime.toLocaleTimeString('es-ES')}.`;
 
         if (template) {
+          const pendingPayment = await this.paymentRepository.findActivePending(
+            PaymentSourceType.APPOINTMENT,
+            appt.id,
+          );
           message = this.templateRenderer.render(template.messageBody, {
             name: client.firstName,
-            paymentUrl: appt.paymentUrl || '',
+            paymentUrl: pendingPayment?.checkoutUrl || '',
             date: appt.startTime.toLocaleString('es-ES'),
           });
         }

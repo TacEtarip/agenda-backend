@@ -1,15 +1,24 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { MessageTemplate } from '@domain/models/message-template.model';
 import { ClientStage } from '@domain/enums/client-stage.enum';
 import type { IMessageTemplateRepository } from '@domain/ports/message-template.repository.interface';
 import { MESSAGE_TEMPLATE_REPOSITORY } from '@domain/ports/message-template.repository.interface';
+import { TemplateRendererService } from './template-renderer.service';
 
 @Injectable()
 export class MessageTemplateService {
   constructor(
     @Inject(MESSAGE_TEMPLATE_REPOSITORY)
     private readonly templateRepository: IMessageTemplateRepository,
+    private readonly templateRenderer: TemplateRendererService,
   ) {}
+
+  private assertValid(messageBody: string): void {
+    const validation = this.templateRenderer.validate(messageBody);
+    if (!validation.valid) {
+      throw new BadRequestException({ code: 'INVALID_MESSAGE_TEMPLATE', message: 'La plantilla contiene datos automáticos inválidos.', validation });
+    }
+  }
 
   async createTemplate(
     companyId: string,
@@ -17,6 +26,7 @@ export class MessageTemplateService {
     stage: ClientStage,
     messageBody: string,
   ): Promise<MessageTemplate> {
+    this.assertValid(messageBody);
     const newTemplate = new MessageTemplate({
       companyId,
       userId,
@@ -35,6 +45,8 @@ export class MessageTemplateService {
     if (!template || template.companyId !== companyId) {
       throw new NotFoundException(`MessageTemplate with ID ${id} not found`);
     }
+
+    if (updates.messageBody !== undefined) this.assertValid(updates.messageBody);
 
     return this.templateRepository.update(id, updates);
   }

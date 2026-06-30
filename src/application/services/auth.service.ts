@@ -48,6 +48,7 @@ export class AuthService {
       passwordHash,
       companyId: company.id,
     });
+    user.companyName = company.name;
 
     return this.authProvider.generateToken(user);
   }

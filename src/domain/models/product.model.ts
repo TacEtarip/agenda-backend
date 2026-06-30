@@ -1,3 +1,5 @@
+import { ProductType } from '../enums/product-type.enum';
+
 export class Product {
   id!: string;
   companyId?: string;
@@ -6,6 +8,7 @@ export class Product {
   createdAt!: Date;
   description?: string;
   price?: number;
+  type!: ProductType;
 
   constructor(partial: Partial<Product>) {
     Object.assign(this, partial);

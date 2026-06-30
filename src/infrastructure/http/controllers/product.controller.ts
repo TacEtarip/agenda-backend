@@ -28,6 +28,7 @@ export class ProductController {
     return this.productService.createProduct({
       ...dto,
       companyId: user.companyId,
+      userId: user.userId,
     });
   }
 

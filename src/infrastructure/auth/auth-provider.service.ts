@@ -23,6 +23,7 @@ export class AuthProviderService implements IAuthProvider {
       sub: user.id,
       email: user.email,
       companyId: user.companyId,
+      companyName: user.companyName,
     };
     return { accessToken: this.jwtService.sign(payload) };
   }

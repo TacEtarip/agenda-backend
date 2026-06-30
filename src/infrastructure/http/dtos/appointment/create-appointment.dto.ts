@@ -1,6 +1,5 @@
 import {
   IsDateString,
-  IsBoolean,
   IsEnum,
   IsNotEmpty,
   IsOptional,
@@ -31,7 +30,4 @@ export class CreateAppointmentDto {
   @IsOptional()
   status?: AppointmentStatus;
 
-  @IsOptional()
-  @IsBoolean()
-  requestPaymentLink?: boolean;
 }

@@ -11,6 +11,7 @@ import { ATTACHMENT_REPOSITORY } from '@domain/ports/attachment.repository.inter
 import { MESSAGE_TEMPLATE_REPOSITORY } from '@domain/ports/message-template.repository.interface';
 import { PRODUCT_REPOSITORY } from '@domain/ports/product.repository.interface';
 import { CLIENT_PRODUCT_REPOSITORY } from '@domain/ports/client-product.repository.interface';
+import { PAYMENT_REPOSITORY } from '@domain/ports/payment.repository.interface';
 
 // ORM Entities
 import { CompanyOrmEntity } from './entities/company.orm-entity';
@@ -23,6 +24,7 @@ import { MessageTemplateOrmEntity } from './entities/message-template.orm-entity
 import { ProductOrmEntity } from './entities/product.orm-entity';
 import { ClientProductOrmEntity } from './entities/client-product.orm-entity';
 import { StageOrmEntity } from './entities/stage.orm-entity';
+import { PaymentOrmEntity } from './entities/payment.orm-entity';
 
 // Repositories
 import { CompanyRepository } from './repositories/company.repository';
@@ -35,6 +37,7 @@ import { MessageTemplateRepository } from './repositories/message-template.repos
 import { ProductRepository } from './repositories/product.repository';
 import { ClientProductRepository } from './repositories/client-product.repository';
 import { StageSeedService } from './stage-seed.service';
+import { PaymentRepository } from './repositories/payment.repository';
 
 // Combine Repositories Providers to bind Interfaces -> Implementations
 const repositoryProviders = [
@@ -74,6 +77,10 @@ const repositoryProviders = [
     provide: CLIENT_PRODUCT_REPOSITORY,
     useClass: ClientProductRepository,
   },
+  {
+    provide: PAYMENT_REPOSITORY,
+    useClass: PaymentRepository,
+  },
 ];
 
 @Global()
@@ -90,6 +97,7 @@ const repositoryProviders = [
       ProductOrmEntity,
       ClientProductOrmEntity,
       StageOrmEntity,
+      PaymentOrmEntity,
     ]),
   ],
   providers: [...repositoryProviders, StageSeedService],

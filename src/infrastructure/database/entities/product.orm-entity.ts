@@ -10,6 +10,7 @@ import {
 import { UserOrmEntity } from './user.orm-entity';
 import { CompanyOrmEntity } from './company.orm-entity';
 import { ClientProductOrmEntity } from './client-product.orm-entity';
+import { ProductType } from '@domain/enums/product-type.enum';
 
 @Entity('products')
 export class ProductOrmEntity {
@@ -34,6 +35,9 @@ export class ProductOrmEntity {
 
   @Column({ type: 'decimal', nullable: true })
   price!: number | null;
+
+  @Column({ type: 'enum', enum: ProductType, default: ProductType.PRODUCT })
+  type!: ProductType;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;

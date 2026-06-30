@@ -1,5 +1,5 @@
 import { ClientStage } from '@domain/enums/client-stage.enum';
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class UpdateMessageTemplateDto {
   @IsEnum(ClientStage)
@@ -7,6 +7,8 @@ export class UpdateMessageTemplateDto {
   stage?: ClientStage;
 
   @IsString()
+  @IsNotEmpty()
+  @MaxLength(700)
   @IsOptional()
   messageBody?: string;
 }

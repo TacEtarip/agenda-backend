@@ -24,6 +24,16 @@ export class ClientProductRepository implements IClientProductRepository {
     return ormEntity ? ClientProductMapper.toDomain(ormEntity) : null;
   }
 
+  async findByClientAndProduct(
+    clientId: string,
+    productId: string,
+  ): Promise<ClientProduct | null> {
+    const ormEntity = await this.repository.findOne({
+      where: { clientId, productId },
+    });
+    return ormEntity ? ClientProductMapper.toDomain(ormEntity) : null;
+  }
+
   async findAllByClientId(clientId: string): Promise<ClientProduct[]> {
     const ormEntities = await this.repository.find({
       where: { client: { id: clientId } },

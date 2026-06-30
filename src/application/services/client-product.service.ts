@@ -1,4 +1,9 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  Inject,
+  NotFoundException,
+} from '@nestjs/common';
 import { CLIENT_PRODUCT_REPOSITORY } from '@domain/ports/client-product.repository.interface';
 import type { IClientProductRepository } from '@domain/ports/client-product.repository.interface';
 import { CLIENT_REPOSITORY } from '@domain/ports/client.repository.interface';
@@ -45,6 +50,16 @@ export class ClientProductService {
 
     await this.assertClientExists(data.clientId, companyId);
     await this.assertProductExists(data.productId, companyId);
+
+    const existing = await this.clientProductRepository.findByClientAndProduct(
+      data.clientId,
+      data.productId,
+    );
+    if (existing) {
+      throw new ConflictException(
+        'This product is already linked to the client',
+      );
+    }
 
     return this.clientProductRepository.create(data);
   }

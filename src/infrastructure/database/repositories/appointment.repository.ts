@@ -48,7 +48,7 @@ export class AppointmentRepository implements IAppointmentRepository {
     const ormEntities = await this.repository.find({
       where: {
         startTime: Between(from, to),
-      }, // Here we might want to also filter by status (e.g., SCHEDULED or PENDING_PAYMENT)
+      },
     });
     return ormEntities.map((entity) => AppointmentMapper.toDomain(entity));
   }

@@ -1,4 +1,5 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { PaymentStatus } from '@domain/enums/payment-status.enum';
 
 export class PaymentWebhookDto {
   @IsString()
@@ -6,10 +7,8 @@ export class PaymentWebhookDto {
   internalReferenceId?: string;
 
   @IsString()
-  @IsOptional()
-  paymentId?: string;
+  paymentId!: string;
 
-  @IsString()
-  @IsOptional()
-  status?: string;
+  @IsEnum(PaymentStatus)
+  status!: PaymentStatus;
 }

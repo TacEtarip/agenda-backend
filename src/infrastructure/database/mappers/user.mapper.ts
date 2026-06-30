@@ -6,6 +6,7 @@ export class UserMapper {
     return new User({
       id: ormEntity.id,
       companyId: ormEntity.companyId,
+      companyName: ormEntity.company?.name,
       email: ormEntity.email,
       firstName: ormEntity.firstName,
       lastName: ormEntity.lastName,

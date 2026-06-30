@@ -28,16 +28,14 @@ export class AppointmentController {
     @Body() dto: CreateAppointmentDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    const { requestPaymentLink, ...appointmentData } = dto;
     return this.appointmentService.createAppointment(
       {
-        ...appointmentData,
-        startTime: new Date(appointmentData.startTime),
-        endTime: new Date(appointmentData.endTime),
+        ...dto,
+        startTime: new Date(dto.startTime),
+        endTime: new Date(dto.endTime),
         companyId: user.companyId,
         userId: user.userId,
       },
-      requestPaymentLink,
     );
   }
 

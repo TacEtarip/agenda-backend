@@ -50,12 +50,6 @@ export class AppointmentOrmEntity {
   })
   status!: AppointmentStatus;
 
-  @Column({ name: 'payment_id', nullable: true })
-  paymentId?: string;
-
-  @Column({ name: 'payment_url', nullable: true })
-  paymentUrl?: string;
-
   // Foreign Keys
   @Column({ name: 'client_id', type: 'uuid' })
   clientId!: string;

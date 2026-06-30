@@ -1,36 +1,28 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { TEMPLATE_VARIABLES, TemplateValidationResult, TemplateVariableKey, validateTemplate } from './template-variable.registry';
 
-export interface TemplateVariables {
-  name?: string;
-  paymentUrl?: string;
-  date?: string;
-  [key: string]: string | undefined;
-}
+export type TemplateVariables = Partial<Record<TemplateVariableKey, string>>;
 
 @Injectable()
 export class TemplateRendererService {
-  /**
-   * Reemplaza las variables como {{name}}, {{paymentUrl}}, etc.
-   * en el texto de la plantilla.
-   */
+  getMetadata() { return TEMPLATE_VARIABLES; }
+
+  validate(templateText: string): TemplateValidationResult { return validateTemplate(templateText); }
+
   render(templateText: string, variables: TemplateVariables): string {
-    let message = templateText;
-
-    if (variables.name) {
-      message = message.replace(/\{\{name\}\}/gi, variables.name);
+    const validation = validateTemplate(templateText, variables, true);
+    if (!validation.valid) {
+      throw new BadRequestException({ code: 'INVALID_MESSAGE_TEMPLATE', message: 'La plantilla contiene datos automáticos inválidos o sin valor.', validation });
     }
+    return validation.detectedVariables.reduce(
+      (message, key) => message.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), () => variables[key]!),
+      templateText,
+    );
+  }
 
-    if (variables.paymentUrl) {
-      message = message.replace(/\{\{paymentUrl\}\}/gi, variables.paymentUrl);
-    }
-
-    if (variables.date) {
-      message = message.replace(/\{\{date\}\}/gi, variables.date);
-    }
-
-    // Podríamos extender para buscar Object.keys(variables) y hacer replace de todos,
-    // pero para MVP esto es rápido y seguro.
-
-    return message;
+  preview(templateText: string) {
+    const values = Object.fromEntries(TEMPLATE_VARIABLES.map(({ key, example }) => [key, example])) as Record<TemplateVariableKey, string>;
+    const validation = validateTemplate(templateText, values, true);
+    return { message: validation.valid ? this.render(templateText, values) : templateText, validation, warnings: validation.valid ? [] : ['Corrige la plantilla para generar la vista previa.'] };
   }
 }

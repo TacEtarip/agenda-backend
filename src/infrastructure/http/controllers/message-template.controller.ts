@@ -15,13 +15,26 @@ import type { AuthenticatedUser } from '@infrastructure/auth/strategies/jwt.stra
 import { MessageTemplateService } from '@application/services/message-template.service';
 import { UpsertMessageTemplateDto } from '../dtos/message-template/upsert-template.dto';
 import { UpdateMessageTemplateDto } from '../dtos/message-template/update-template.dto';
+import { PreviewMessageTemplateDto } from '../dtos/message-template/preview-template.dto';
+import { TemplateRendererService } from '@application/services/template-renderer.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('message-templates')
 export class MessageTemplateController {
   constructor(
     private readonly messageTemplateService: MessageTemplateService,
+    private readonly templateRenderer: TemplateRendererService,
   ) {}
+
+  @Get('metadata')
+  getMetadata() {
+    return { variables: this.templateRenderer.getMetadata() };
+  }
+
+  @Post('preview')
+  preview(@Body() dto: PreviewMessageTemplateDto) {
+    return this.templateRenderer.preview(dto.messageBody);
+  }
 
   @Post()
   async createTemplate(

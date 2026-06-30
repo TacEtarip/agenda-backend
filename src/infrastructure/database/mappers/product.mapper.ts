@@ -13,6 +13,7 @@ export class ProductMapper {
         ormEntity.price !== null && ormEntity.price !== undefined
           ? Number(ormEntity.price)
           : undefined,
+      type: ormEntity.type,
       createdAt: ormEntity.createdAt,
     });
   }
@@ -28,6 +29,7 @@ export class ProductMapper {
       ormEntity.description = domainProduct.description;
     if (domainProduct.price !== undefined)
       ormEntity.price = domainProduct.price;
+    if (domainProduct.type !== undefined) ormEntity.type = domainProduct.type;
     return ormEntity;
   }
 }

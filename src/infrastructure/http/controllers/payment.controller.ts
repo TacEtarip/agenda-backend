@@ -1,51 +1,68 @@
 import {
-  Controller,
-  Post,
   Body,
+  Controller,
+  Get,
+  Headers,
+  Param,
+  ParseEnumPipe,
+  ParseUUIDPipe,
+  Post,
+  Query,
   UseGuards,
-  Inject,
-  Logger,
 } from '@nestjs/common';
-import {
-  PAYMENT_PROVIDER,
-  PaymentIntent,
-} from '@domain/ports/payment.provider.interface';
-import type { IPaymentProvider } from '@domain/ports/payment.provider.interface';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { CreateAppointmentPaymentDto } from '../dtos/payment/create-appointment-payment.dto';
+import { PaymentService } from '@application/services/payment.service';
+import { PaymentSourceType } from '@domain/enums/payment-source-type.enum';
+import { JwtAuthGuard } from '@infrastructure/auth/guards/jwt-auth.guard';
+import { CurrentUser } from '@infrastructure/auth/decorators/current-user.decorator';
+import type { AuthenticatedUser } from '@infrastructure/auth/strategies/jwt.strategy';
+import { CreatePaymentLinkDto } from '../dtos/payment/create-payment-link.dto';
+import { RegisterManualPaymentDto } from '../dtos/payment/register-manual-payment.dto';
+import { ListPaymentsQueryDto } from '../dtos/payment/list-payments-query.dto';
 import { PaymentWebhookDto } from '../dtos/payment/payment-webhook.dto';
 
 @Controller('payments')
 export class PaymentController {
-  private readonly logger = new Logger(PaymentController.name);
+  constructor(private readonly paymentService: PaymentService) {}
 
-  constructor(
-    @Inject(PAYMENT_PROVIDER)
-    private readonly paymentProvider: IPaymentProvider,
-  ) {}
-
-  // Endpoint para que el profesional genere un link de cobro rápido para su paciente
   @UseGuards(JwtAuthGuard)
-  @Post('create-appointment-payment')
-  async createAppointmentPayment(
-    @Body() body: CreateAppointmentPaymentDto,
-  ): Promise<PaymentIntent> {
-    // Generamos un link para que el paciente pague la cita por Yape/Tarjeta
-    return this.paymentProvider.createPaymentIntent(
-      body.amount,
-      'PEN',
-      body.description || 'Reserva de Cita',
-      body.appointmentId,
-    );
+  @Post('links')
+  createLink(@Body() dto: CreatePaymentLinkDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.paymentService.createLink(dto, user.companyId || '');
   }
 
-  // Webhook para que la Pasarela avise cuando el PACIENTE haya pagado
+  @UseGuards(JwtAuthGuard)
+  @Post('manual')
+  registerManual(@Body() dto: RegisterManualPaymentDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.paymentService.registerManual(dto, user.companyId || '');
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  list(@Query() query: ListPaymentsQueryDto, @CurrentUser() user: AuthenticatedUser) {
+    return this.paymentService.list(query, user.companyId || '');
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('source/:sourceType/:sourceId')
+  sourceHistory(
+    @Param('sourceType', new ParseEnumPipe(PaymentSourceType)) sourceType: PaymentSourceType,
+    @Param('sourceId', ParseUUIDPipe) sourceId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.paymentService.getSourceHistory(sourceType, sourceId, user.companyId || '');
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/cancel')
+  cancel(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.paymentService.cancel(id, user.companyId || '');
+  }
+
   @Post('webhook')
-  async handleWebhook(@Body() payload: PaymentWebhookDto) {
-    // Buscaríamos cita usando payload.internalReferenceId para marcarla "PAGADA"
-    this.logger.log(
-      `Payment webhook received: reference=${payload.internalReferenceId ?? 'unknown'} status=${payload.status ?? 'unknown'}`,
-    );
-    return { received: true };
+  webhook(
+    @Body() dto: PaymentWebhookDto,
+    @Headers('x-payment-signature') signature?: string,
+  ) {
+    return this.paymentService.handleWebhook(dto.paymentId, dto.status, signature);
   }
 }
