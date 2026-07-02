@@ -1,3 +1,6 @@
+import { PaymentMethod } from '@domain/enums/payment-method.enum';
+import { PaymentOrigin } from '@domain/enums/payment-origin.enum';
+import { PaymentStatus } from '@domain/enums/payment-status.enum';
 import {
   Check,
   Column,
@@ -9,13 +12,10 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { PaymentMethod } from '@domain/enums/payment-method.enum';
-import { PaymentOrigin } from '@domain/enums/payment-origin.enum';
-import { PaymentStatus } from '@domain/enums/payment-status.enum';
-import { CompanyOrmEntity } from './company.orm-entity';
-import { ClientOrmEntity } from './client.orm-entity';
 import { AppointmentOrmEntity } from './appointment.orm-entity';
 import { ClientProductOrmEntity } from './client-product.orm-entity';
+import { ClientOrmEntity } from './client.orm-entity';
+import { CompanyOrmEntity } from './company.orm-entity';
 
 @Entity('payments')
 @Check(
@@ -26,10 +26,22 @@ import { ClientProductOrmEntity } from './client-product.orm-entity';
 @Index('IDX_payments_client', ['clientId'])
 @Index('IDX_payments_appointment', ['appointmentId'])
 @Index('IDX_payments_client_product', ['clientProductId'])
-@Index('UQ_payments_pending_appointment', ['appointmentId'], { unique: true, where: '"status" = \'PENDING\' AND "appointment_id" IS NOT NULL' })
-@Index('UQ_payments_paid_appointment', ['appointmentId'], { unique: true, where: '"status" = \'PAID\' AND "appointment_id" IS NOT NULL' })
-@Index('UQ_payments_pending_client_product', ['clientProductId'], { unique: true, where: '"status" = \'PENDING\' AND "client_product_id" IS NOT NULL' })
-@Index('UQ_payments_paid_client_product', ['clientProductId'], { unique: true, where: '"status" = \'PAID\' AND "client_product_id" IS NOT NULL' })
+@Index('UQ_payments_pending_appointment', ['appointmentId'], {
+  unique: true,
+  where: '"status" = \'PENDING\' AND "appointment_id" IS NOT NULL',
+})
+@Index('UQ_payments_paid_appointment', ['appointmentId'], {
+  unique: true,
+  where: '"status" = \'PAID\' AND "appointment_id" IS NOT NULL',
+})
+@Index('UQ_payments_pending_client_product', ['clientProductId'], {
+  unique: true,
+  where: '"status" = \'PENDING\' AND "client_product_id" IS NOT NULL',
+})
+@Index('UQ_payments_paid_client_product', ['clientProductId'], {
+  unique: true,
+  where: '"status" = \'PAID\' AND "client_product_id" IS NOT NULL',
+})
 @Index('UQ_payments_provider_payment_id', ['providerPaymentId'], {
   unique: true,
   where: '"provider_payment_id" IS NOT NULL',
@@ -94,11 +106,17 @@ export class PaymentOrmEntity {
   @JoinColumn({ name: 'client_id' })
   client!: ClientOrmEntity;
 
-  @ManyToOne(() => AppointmentOrmEntity, { nullable: true, onDelete: 'RESTRICT' })
+  @ManyToOne(() => AppointmentOrmEntity, {
+    nullable: true,
+    onDelete: 'RESTRICT',
+  })
   @JoinColumn({ name: 'appointment_id' })
   appointment!: AppointmentOrmEntity | null;
 
-  @ManyToOne(() => ClientProductOrmEntity, { nullable: true, onDelete: 'RESTRICT' })
+  @ManyToOne(() => ClientProductOrmEntity, {
+    nullable: true,
+    onDelete: 'RESTRICT',
+  })
   @JoinColumn({ name: 'client_product_id' })
   clientProduct!: ClientProductOrmEntity | null;
 }

@@ -26,35 +26,52 @@ export class PaymentController {
 
   @UseGuards(JwtAuthGuard)
   @Post('links')
-  createLink(@Body() dto: CreatePaymentLinkDto, @CurrentUser() user: AuthenticatedUser) {
+  createLink(
+    @Body() dto: CreatePaymentLinkDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     return this.paymentService.createLink(dto, user.companyId || '');
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('manual')
-  registerManual(@Body() dto: RegisterManualPaymentDto, @CurrentUser() user: AuthenticatedUser) {
+  registerManual(
+    @Body() dto: RegisterManualPaymentDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     return this.paymentService.registerManual(dto, user.companyId || '');
   }
 
   @UseGuards(JwtAuthGuard)
   @Get()
-  list(@Query() query: ListPaymentsQueryDto, @CurrentUser() user: AuthenticatedUser) {
+  list(
+    @Query() query: ListPaymentsQueryDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     return this.paymentService.list(query, user.companyId || '');
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('source/:sourceType/:sourceId')
   sourceHistory(
-    @Param('sourceType', new ParseEnumPipe(PaymentSourceType)) sourceType: PaymentSourceType,
+    @Param('sourceType', new ParseEnumPipe(PaymentSourceType))
+    sourceType: PaymentSourceType,
     @Param('sourceId', ParseUUIDPipe) sourceId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.paymentService.getSourceHistory(sourceType, sourceId, user.companyId || '');
+    return this.paymentService.getSourceHistory(
+      sourceType,
+      sourceId,
+      user.companyId || '',
+    );
   }
 
   @UseGuards(JwtAuthGuard)
   @Post(':id/cancel')
-  cancel(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthenticatedUser) {
+  cancel(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     return this.paymentService.cancel(id, user.companyId || '');
   }
 
@@ -63,6 +80,10 @@ export class PaymentController {
     @Body() dto: PaymentWebhookDto,
     @Headers('x-payment-signature') signature?: string,
   ) {
-    return this.paymentService.handleWebhook(dto.paymentId, dto.status, signature);
+    return this.paymentService.handleWebhook(
+      dto.paymentId,
+      dto.status,
+      signature,
+    );
   }
 }

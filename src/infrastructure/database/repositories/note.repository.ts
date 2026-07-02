@@ -20,11 +20,16 @@ export class NoteRepository implements INoteRepository {
   }
 
   async findById(id: string, companyId: string): Promise<Note | null> {
-    const ormEntity = await this.repository.findOne({ where: { id, companyId } });
+    const ormEntity = await this.repository.findOne({
+      where: { id, companyId },
+    });
     return ormEntity ? NoteMapper.toDomain(ormEntity) : null;
   }
 
-  async findAllByClientId(clientId: string, companyId: string): Promise<Note[]> {
+  async findAllByClientId(
+    clientId: string,
+    companyId: string,
+  ): Promise<Note[]> {
     const ormEntities = await this.repository.find({
       where: { client: { id: clientId }, companyId },
       relations: ['client'],

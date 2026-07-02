@@ -17,7 +17,7 @@ export class ProductService {
 
   async getProductById(id: string, companyId: string): Promise<Product> {
     const product = await this.productRepository.findById(id);
-    if (!product || product.companyId !== companyId) {
+    if (!product?.companyId || product.companyId !== companyId) {
       throw new NotFoundException(`Product ${id} not found`);
     }
     return product;

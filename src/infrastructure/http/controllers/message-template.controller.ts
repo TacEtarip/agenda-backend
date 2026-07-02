@@ -1,3 +1,8 @@
+import { MessageTemplateService } from '@application/services/message-template.service';
+import { TemplateRendererService } from '@application/services/template-renderer.service';
+import { CurrentUser } from '@infrastructure/auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '@infrastructure/auth/guards/jwt-auth.guard';
+import type { AuthenticatedUser } from '@infrastructure/auth/strategies/jwt.strategy';
 import {
   Body,
   Controller,
@@ -9,14 +14,9 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '@infrastructure/auth/guards/jwt-auth.guard';
-import { CurrentUser } from '@infrastructure/auth/decorators/current-user.decorator';
-import type { AuthenticatedUser } from '@infrastructure/auth/strategies/jwt.strategy';
-import { MessageTemplateService } from '@application/services/message-template.service';
-import { UpsertMessageTemplateDto } from '../dtos/message-template/upsert-template.dto';
-import { UpdateMessageTemplateDto } from '../dtos/message-template/update-template.dto';
 import { PreviewMessageTemplateDto } from '../dtos/message-template/preview-template.dto';
-import { TemplateRendererService } from '@application/services/template-renderer.service';
+import { UpdateMessageTemplateDto } from '../dtos/message-template/update-template.dto';
+import { UpsertMessageTemplateDto } from '../dtos/message-template/upsert-template.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('message-templates')
@@ -85,9 +85,6 @@ export class MessageTemplateController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.messageTemplateService.deleteTemplate(
-      id,
-      user.companyId || '',
-    );
+    return this.messageTemplateService.deleteTemplate(id, user.companyId || '');
   }
 }

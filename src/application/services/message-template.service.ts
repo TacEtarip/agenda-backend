@@ -1,4 +1,9 @@
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { MessageTemplate } from '@domain/models/message-template.model';
 import { ClientStage } from '@domain/enums/client-stage.enum';
 import type { IMessageTemplateRepository } from '@domain/ports/message-template.repository.interface';
@@ -16,7 +21,11 @@ export class MessageTemplateService {
   private assertValid(messageBody: string): void {
     const validation = this.templateRenderer.validate(messageBody);
     if (!validation.valid) {
-      throw new BadRequestException({ code: 'INVALID_MESSAGE_TEMPLATE', message: 'La plantilla contiene datos automáticos inválidos.', validation });
+      throw new BadRequestException({
+        code: 'INVALID_MESSAGE_TEMPLATE',
+        message: 'La plantilla contiene datos automáticos inválidos.',
+        validation,
+      });
     }
   }
 
@@ -42,18 +51,22 @@ export class MessageTemplateService {
     companyId: string,
   ): Promise<MessageTemplate> {
     const template = await this.templateRepository.findById(id);
-    if (!template || template.companyId !== companyId) {
+    if (!template?.companyId || template.companyId !== companyId) {
       throw new NotFoundException(`MessageTemplate with ID ${id} not found`);
     }
 
-    if (updates.messageBody !== undefined) this.assertValid(updates.messageBody);
+    if (updates.messageBody !== undefined)
+      this.assertValid(updates.messageBody);
 
     return this.templateRepository.update(id, updates);
   }
 
-  async getTemplateById(id: string, companyId: string): Promise<MessageTemplate> {
+  async getTemplateById(
+    id: string,
+    companyId: string,
+  ): Promise<MessageTemplate> {
     const template = await this.templateRepository.findById(id);
-    if (!template || template.companyId !== companyId) {
+    if (!template?.companyId || template.companyId !== companyId) {
       throw new NotFoundException(`MessageTemplate with ID ${id} not found`);
     }
     return template;

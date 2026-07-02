@@ -20,11 +20,16 @@ export class AttachmentRepository implements IAttachmentRepository {
   }
 
   async findById(id: string, companyId: string): Promise<Attachment | null> {
-    const ormEntity = await this.repository.findOne({ where: { id, companyId } });
+    const ormEntity = await this.repository.findOne({
+      where: { id, companyId },
+    });
     return ormEntity ? AttachmentMapper.toDomain(ormEntity) : null;
   }
 
-  async findAllByClientId(clientId: string, companyId: string): Promise<Attachment[]> {
+  async findAllByClientId(
+    clientId: string,
+    companyId: string,
+  ): Promise<Attachment[]> {
     const ormEntities = await this.repository.find({
       where: { client: { id: clientId }, companyId },
       relations: ['client'],
@@ -34,7 +39,10 @@ export class AttachmentRepository implements IAttachmentRepository {
     );
   }
 
-  async findAllByNoteId(noteId: string, companyId: string): Promise<Attachment[]> {
+  async findAllByNoteId(
+    noteId: string,
+    companyId: string,
+  ): Promise<Attachment[]> {
     const ormEntities = await this.repository.find({
       where: { note: { id: noteId }, companyId },
       relations: ['note'],

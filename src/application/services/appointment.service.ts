@@ -1,18 +1,18 @@
+import { AppointmentStatus } from '@domain/enums/appointment-status.enum';
+import { Appointment } from '@domain/models/appointment.model';
+import { Client } from '@domain/models/client.model';
+import type { IAppointmentRepository } from '@domain/ports/appointment.repository.interface';
+import { APPOINTMENT_REPOSITORY } from '@domain/ports/appointment.repository.interface';
+import type { IClientRepository } from '@domain/ports/client.repository.interface';
+import { CLIENT_REPOSITORY } from '@domain/ports/client.repository.interface';
+import type { IUserRepository } from '@domain/ports/user.repository.interface';
+import { USER_REPOSITORY } from '@domain/ports/user.repository.interface';
 import {
   ConflictException,
-  Injectable,
   Inject,
+  Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { APPOINTMENT_REPOSITORY } from '@domain/ports/appointment.repository.interface';
-import type { IAppointmentRepository } from '@domain/ports/appointment.repository.interface';
-import { CLIENT_REPOSITORY } from '@domain/ports/client.repository.interface';
-import type { IClientRepository } from '@domain/ports/client.repository.interface';
-import { USER_REPOSITORY } from '@domain/ports/user.repository.interface';
-import type { IUserRepository } from '@domain/ports/user.repository.interface';
-import { Appointment } from '@domain/models/appointment.model';
-import { AppointmentStatus } from '@domain/enums/appointment-status.enum';
-import { Client } from '@domain/models/client.model';
 
 @Injectable()
 export class AppointmentService {
@@ -40,12 +40,9 @@ export class AppointmentService {
     if (!data.clientId) throw new Error('clientId is required');
     if (!data.userId) throw new Error('userId is required');
     if (!data.companyId) throw new Error('companyId is required');
-    await this.getClientAssertExists(
-      data.clientId,
-      data.companyId,
-    );
+    await this.getClientAssertExists(data.clientId, data.companyId);
     const user = await this.userRepository.findById(data.userId);
-    if (!user || user.companyId !== data.companyId) {
+    if (!user?.companyId || user.companyId !== data.companyId) {
       throw new NotFoundException(`User ${data.userId} not found`);
     }
 
@@ -57,7 +54,7 @@ export class AppointmentService {
     companyId: string,
   ): Promise<Appointment> {
     const appointment = await this.appointmentRepository.findById(id);
-    if (!appointment || appointment.companyId !== companyId)
+    if (!appointment?.companyId || appointment.companyId !== companyId)
       throw new NotFoundException(`Appointment ${id} not found`);
     return appointment;
   }

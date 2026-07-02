@@ -32,7 +32,8 @@ export class UserMapper {
     if (domainUser.email) ormEntity.email = domainUser.email;
     if (domainUser.firstName) ormEntity.firstName = domainUser.firstName;
     if (domainUser.lastName) ormEntity.lastName = domainUser.lastName;
-    if (domainUser.phone !== undefined) ormEntity.phone = domainUser.phone || null;
+    if (domainUser.phone !== undefined)
+      ormEntity.phone = domainUser.phone || null;
     if (domainUser.passwordHash !== undefined)
       ormEntity.passwordHash = domainUser.passwordHash;
     if (domainUser.googleId !== undefined)

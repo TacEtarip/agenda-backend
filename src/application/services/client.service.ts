@@ -24,7 +24,7 @@ export class ClientService {
 
     // Verify if the associated professional (user) exists
     const user = await this.userRepository.findById(data.userId);
-    if (!user || user.companyId !== data.companyId) {
+    if (!user?.companyId || user.companyId !== data.companyId) {
       throw new NotFoundException('User not found');
     }
 
@@ -33,7 +33,7 @@ export class ClientService {
 
   async getClient(id: string, companyId: string): Promise<Client | null> {
     const client = await this.clientRepository.findById(id);
-    if (!client || client.companyId !== companyId) return null;
+    if (!client?.companyId || client.companyId !== companyId) return null;
     return client;
   }
 
@@ -51,7 +51,7 @@ export class ClientService {
     companyId: string,
   ): Promise<Client> {
     const existingClient = await this.clientRepository.findById(id);
-    if (!existingClient || existingClient.companyId !== companyId) {
+    if (!existingClient?.companyId || existingClient.companyId !== companyId) {
       throw new NotFoundException(`Client with ID ${id} not found`);
     }
 
@@ -60,7 +60,7 @@ export class ClientService {
 
   async deleteClient(id: string, companyId: string): Promise<void> {
     const existingClient = await this.clientRepository.findById(id);
-    if (!existingClient || existingClient.companyId !== companyId) {
+    if (!existingClient?.companyId || existingClient.companyId !== companyId) {
       throw new NotFoundException(`Client with ID ${id} not found`);
     }
 

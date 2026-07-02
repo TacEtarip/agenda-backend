@@ -8,7 +8,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { timingSafeEqual } from 'crypto';
+import { timingSafeEqual } from 'node:crypto';
 import { APPOINTMENT_REPOSITORY } from '@domain/ports/appointment.repository.interface';
 import type { IAppointmentRepository } from '@domain/ports/appointment.repository.interface';
 import { CLIENT_PRODUCT_REPOSITORY } from '@domain/ports/client-product.repository.interface';
@@ -47,24 +47,42 @@ export interface RegisterManualPaymentInput extends CreatePaymentInput {
 export class PaymentService {
   constructor(
     @Inject(PAYMENT_REPOSITORY) private readonly payments: IPaymentRepository,
-    @Inject(APPOINTMENT_REPOSITORY) private readonly appointments: IAppointmentRepository,
-    @Inject(CLIENT_PRODUCT_REPOSITORY) private readonly clientProducts: IClientProductRepository,
+    @Inject(APPOINTMENT_REPOSITORY)
+    private readonly appointments: IAppointmentRepository,
+    @Inject(CLIENT_PRODUCT_REPOSITORY)
+    private readonly clientProducts: IClientProductRepository,
     @Inject(CLIENT_REPOSITORY) private readonly clients: IClientRepository,
     @Inject(PRODUCT_REPOSITORY) private readonly products: IProductRepository,
     @Inject(PAYMENT_PROVIDER) private readonly provider: IPaymentProvider,
     private readonly config: ConfigService,
   ) {}
 
-  async createLink(input: CreatePaymentInput, companyId: string): Promise<Payment> {
-    const source = await this.resolveSource(input.sourceType, input.sourceId, companyId);
+  async createLink(
+    input: CreatePaymentInput,
+    companyId: string,
+  ): Promise<Payment> {
+    const source = await this.resolveSource(
+      input.sourceType,
+      input.sourceId,
+      companyId,
+    );
     await this.assertNotPaid(input.sourceType, input.sourceId);
-    await this.payments.cancelPendingForSource(input.sourceType, input.sourceId);
+    await this.payments.cancelPendingForSource(
+      input.sourceType,
+      input.sourceId,
+    );
 
     let payment = await this.payments.create({
       companyId,
       clientId: source.clientId,
-      appointmentId: input.sourceType === PaymentSourceType.APPOINTMENT ? input.sourceId : undefined,
-      clientProductId: input.sourceType === PaymentSourceType.CLIENT_PRODUCT ? input.sourceId : undefined,
+      appointmentId:
+        input.sourceType === PaymentSourceType.APPOINTMENT
+          ? input.sourceId
+          : undefined,
+      clientProductId:
+        input.sourceType === PaymentSourceType.CLIENT_PRODUCT
+          ? input.sourceId
+          : undefined,
       amount: input.amount,
       currency: 'PEN',
       description: input.description?.trim() || source.description,
@@ -91,18 +109,34 @@ export class PaymentService {
     }
   }
 
-  async registerManual(input: RegisterManualPaymentInput, companyId: string): Promise<Payment> {
+  async registerManual(
+    input: RegisterManualPaymentInput,
+    companyId: string,
+  ): Promise<Payment> {
     if (input.method === PaymentMethod.ONLINE) {
       throw new BadRequestException('ONLINE is reserved for payment links');
     }
-    const source = await this.resolveSource(input.sourceType, input.sourceId, companyId);
+    const source = await this.resolveSource(
+      input.sourceType,
+      input.sourceId,
+      companyId,
+    );
     await this.assertNotPaid(input.sourceType, input.sourceId);
-    await this.payments.cancelPendingForSource(input.sourceType, input.sourceId);
+    await this.payments.cancelPendingForSource(
+      input.sourceType,
+      input.sourceId,
+    );
     return this.payments.create({
       companyId,
       clientId: source.clientId,
-      appointmentId: input.sourceType === PaymentSourceType.APPOINTMENT ? input.sourceId : undefined,
-      clientProductId: input.sourceType === PaymentSourceType.CLIENT_PRODUCT ? input.sourceId : undefined,
+      appointmentId:
+        input.sourceType === PaymentSourceType.APPOINTMENT
+          ? input.sourceId
+          : undefined,
+      clientProductId:
+        input.sourceType === PaymentSourceType.CLIENT_PRODUCT
+          ? input.sourceId
+          : undefined,
       amount: input.amount,
       currency: 'PEN',
       description: input.description?.trim() || source.description,
@@ -118,7 +152,11 @@ export class PaymentService {
     return this.payments.findAll({ ...filters, companyId });
   }
 
-  async getSourceHistory(sourceType: PaymentSourceType, sourceId: string, companyId: string) {
+  async getSourceHistory(
+    sourceType: PaymentSourceType,
+    sourceId: string,
+    companyId: string,
+  ) {
     await this.resolveSource(sourceType, sourceId, companyId);
     return this.payments.findBySource(sourceType, sourceId);
   }
@@ -131,41 +169,68 @@ export class PaymentService {
     return this.payments.update(id, { status: PaymentStatus.CANCELLED });
   }
 
-  async handleWebhook(providerPaymentId: string, status: PaymentStatus, signature?: string) {
+  async handleWebhook(
+    providerPaymentId: string,
+    status: PaymentStatus,
+    signature?: string,
+  ) {
     this.assertWebhookSignature(signature);
-    const payment = await this.payments.findByProviderPaymentId(providerPaymentId);
+    const payment =
+      await this.payments.findByProviderPaymentId(providerPaymentId);
     if (!payment) throw new NotFoundException('Payment not found');
     if (payment.status === status) return payment;
-    const allowed = payment.status === PaymentStatus.PENDING
-      ? [PaymentStatus.PAID, PaymentStatus.FAILED, PaymentStatus.CANCELLED]
-      : payment.status === PaymentStatus.PAID
-        ? [PaymentStatus.REFUNDED]
-        : [];
-    if (!allowed.includes(status)) throw new ConflictException('Invalid payment transition');
+
+    let allowed: PaymentStatus[];
+    if (payment.status === PaymentStatus.PENDING) {
+      allowed = [
+        PaymentStatus.PAID,
+        PaymentStatus.FAILED,
+        PaymentStatus.CANCELLED,
+      ];
+    } else if (payment.status === PaymentStatus.PAID) {
+      allowed = [PaymentStatus.REFUNDED];
+    } else {
+      allowed = [];
+    }
+
+    if (!allowed.includes(status))
+      throw new ConflictException('Invalid payment transition');
     return this.payments.update(payment.id, {
       status,
       paidAt: status === PaymentStatus.PAID ? new Date() : undefined,
     });
   }
 
-  private async getOwnedPayment(id: string, companyId: string): Promise<Payment> {
+  private async getOwnedPayment(
+    id: string,
+    companyId: string,
+  ): Promise<Payment> {
     const payment = await this.payments.findById(id);
-    if (!payment || payment.companyId !== companyId) throw new NotFoundException('Payment not found');
+    if (!payment?.companyId || payment.companyId !== companyId)
+      throw new NotFoundException('Payment not found');
     return payment;
   }
 
   private async assertNotPaid(sourceType: PaymentSourceType, sourceId: string) {
     if (await this.payments.findPaid(sourceType, sourceId)) {
-      throw new ConflictException('This concept already has a confirmed payment');
+      throw new ConflictException(
+        'This concept already has a confirmed payment',
+      );
     }
   }
 
-  private async resolveSource(sourceType: PaymentSourceType, sourceId: string, companyId: string) {
+  private async resolveSource(
+    sourceType: PaymentSourceType,
+    sourceId: string,
+    companyId: string,
+  ) {
     if (sourceType === PaymentSourceType.APPOINTMENT) {
       const appointment = await this.appointments.findById(sourceId);
-      if (!appointment || appointment.companyId !== companyId) throw new NotFoundException('Appointment not found');
+      if (!appointment?.companyId || appointment.companyId !== companyId)
+        throw new NotFoundException('Appointment not found');
       const client = await this.clients.findById(appointment.clientId);
-      if (!client || client.companyId !== companyId) throw new NotFoundException('Client not found');
+      if (!client?.companyId || client.companyId !== companyId)
+        throw new NotFoundException('Client not found');
       return { clientId: appointment.clientId, description: appointment.title };
     }
 
@@ -173,7 +238,12 @@ export class PaymentService {
     if (!clientProduct) throw new NotFoundException('Client product not found');
     const client = await this.clients.findById(clientProduct.clientId);
     const product = await this.products.findById(clientProduct.productId);
-    if (!client || client.companyId !== companyId || !product || product.companyId !== companyId) {
+    if (
+      !client ||
+      client?.companyId !== companyId ||
+      !product ||
+      product?.companyId !== companyId
+    ) {
       throw new NotFoundException('Client product not found');
     }
     return { clientId: clientProduct.clientId, description: product.name };
@@ -190,7 +260,10 @@ export class PaymentService {
     if (!signature) throw new ForbiddenException('Missing webhook signature');
     const expected = Buffer.from(secret);
     const received = Buffer.from(signature);
-    if (expected.length !== received.length || !timingSafeEqual(expected, received)) {
+    if (
+      expected.length !== received.length ||
+      !timingSafeEqual(expected, received)
+    ) {
       throw new ForbiddenException('Invalid webhook signature');
     }
   }

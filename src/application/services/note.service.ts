@@ -19,7 +19,7 @@ export class NoteService {
     companyId: string,
   ): Promise<void> {
     const client = await this.clientRepository.findById(clientId);
-    if (!client || client.companyId !== companyId)
+    if (!client?.companyId || client.companyId !== companyId)
       throw new NotFoundException(`Client ${clientId} not found`);
   }
 

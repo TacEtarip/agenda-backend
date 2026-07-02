@@ -28,7 +28,7 @@ export class ClientProductService {
     companyId: string,
   ): Promise<void> {
     const client = await this.clientRepository.findById(clientId);
-    if (!client || client.companyId !== companyId)
+    if (!client?.companyId || client.companyId !== companyId)
       throw new NotFoundException(`Client ${clientId} not found`);
   }
 
@@ -37,7 +37,7 @@ export class ClientProductService {
     companyId: string,
   ): Promise<void> {
     const product = await this.productRepository.findById(productId);
-    if (!product || product.companyId !== companyId)
+    if (!product?.companyId || product.companyId !== companyId)
       throw new NotFoundException(`Product ${productId} not found`);
   }
 

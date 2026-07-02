@@ -1,3 +1,7 @@
+import { ProductService } from '@application/services/product.service';
+import { CurrentUser } from '@infrastructure/auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '@infrastructure/auth/guards/jwt-auth.guard';
+import type { AuthenticatedUser } from '@infrastructure/auth/strategies/jwt.strategy';
 import {
   Body,
   Controller,
@@ -11,10 +15,6 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { ProductService } from '@application/services/product.service';
-import { JwtAuthGuard } from '@infrastructure/auth/guards/jwt-auth.guard';
-import { CurrentUser } from '@infrastructure/auth/decorators/current-user.decorator';
-import type { AuthenticatedUser } from '@infrastructure/auth/strategies/jwt.strategy';
 import { CreateProductDto } from '../dtos/product/create-product.dto';
 import { UpdateProductDto } from '../dtos/product/update-product.dto';
 
@@ -24,7 +24,10 @@ export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   @Post()
-  create(@Body() dto: CreateProductDto, @CurrentUser() user: AuthenticatedUser) {
+  create(
+    @Body() dto: CreateProductDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     return this.productService.createProduct({
       ...dto,
       companyId: user.companyId,

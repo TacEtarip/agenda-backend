@@ -6,11 +6,21 @@ export class IndependentPayments1760000000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.startTransaction();
     try {
-      await queryRunner.query(`CREATE TYPE "payments_status_enum" AS ENUM ('PENDING','PAID','FAILED','CANCELLED','REFUNDED')`);
-      await queryRunner.query(`CREATE TYPE "payments_origin_enum" AS ENUM ('PAYMENT_LINK','MANUAL')`);
-      await queryRunner.query(`CREATE TYPE "payments_method_enum" AS ENUM ('ONLINE','CASH','BANK_TRANSFER','YAPE','PLIN','CARD','OTHER')`);
-      await queryRunner.query(`CREATE TYPE "products_type_enum" AS ENUM ('PRODUCT','SERVICE')`);
-      await queryRunner.query(`ALTER TABLE "products" ADD "type" "products_type_enum" NOT NULL DEFAULT 'PRODUCT'`);
+      await queryRunner.query(
+        `CREATE TYPE "payments_status_enum" AS ENUM ('PENDING','PAID','FAILED','CANCELLED','REFUNDED')`,
+      );
+      await queryRunner.query(
+        `CREATE TYPE "payments_origin_enum" AS ENUM ('PAYMENT_LINK','MANUAL')`,
+      );
+      await queryRunner.query(
+        `CREATE TYPE "payments_method_enum" AS ENUM ('ONLINE','CASH','BANK_TRANSFER','YAPE','PLIN','CARD','OTHER')`,
+      );
+      await queryRunner.query(
+        `CREATE TYPE "products_type_enum" AS ENUM ('PRODUCT','SERVICE')`,
+      );
+      await queryRunner.query(
+        `ALTER TABLE "products" ADD "type" "products_type_enum" NOT NULL DEFAULT 'PRODUCT'`,
+      );
       await queryRunner.query(`
         CREATE TABLE "payments" (
           "id" uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -38,15 +48,33 @@ export class IndependentPayments1760000000000 implements MigrationInterface {
           CONSTRAINT "FK_payments_client_product" FOREIGN KEY ("client_product_id") REFERENCES "client_products"("id") ON DELETE RESTRICT
         )
       `);
-      await queryRunner.query(`CREATE INDEX "IDX_payments_company_status" ON "payments" ("company_id", "status")`);
-      await queryRunner.query(`CREATE INDEX "IDX_payments_client" ON "payments" ("client_id")`);
-      await queryRunner.query(`CREATE INDEX "IDX_payments_appointment" ON "payments" ("appointment_id")`);
-      await queryRunner.query(`CREATE INDEX "IDX_payments_client_product" ON "payments" ("client_product_id")`);
-      await queryRunner.query(`CREATE UNIQUE INDEX "UQ_payments_provider_payment_id" ON "payments" ("provider_payment_id") WHERE "provider_payment_id" IS NOT NULL`);
-      await queryRunner.query(`CREATE UNIQUE INDEX "UQ_payments_pending_appointment" ON "payments" ("appointment_id") WHERE "status" = 'PENDING' AND "appointment_id" IS NOT NULL`);
-      await queryRunner.query(`CREATE UNIQUE INDEX "UQ_payments_paid_appointment" ON "payments" ("appointment_id") WHERE "status" = 'PAID' AND "appointment_id" IS NOT NULL`);
-      await queryRunner.query(`CREATE UNIQUE INDEX "UQ_payments_pending_client_product" ON "payments" ("client_product_id") WHERE "status" = 'PENDING' AND "client_product_id" IS NOT NULL`);
-      await queryRunner.query(`CREATE UNIQUE INDEX "UQ_payments_paid_client_product" ON "payments" ("client_product_id") WHERE "status" = 'PAID' AND "client_product_id" IS NOT NULL`);
+      await queryRunner.query(
+        `CREATE INDEX "IDX_payments_company_status" ON "payments" ("company_id", "status")`,
+      );
+      await queryRunner.query(
+        `CREATE INDEX "IDX_payments_client" ON "payments" ("client_id")`,
+      );
+      await queryRunner.query(
+        `CREATE INDEX "IDX_payments_appointment" ON "payments" ("appointment_id")`,
+      );
+      await queryRunner.query(
+        `CREATE INDEX "IDX_payments_client_product" ON "payments" ("client_product_id")`,
+      );
+      await queryRunner.query(
+        `CREATE UNIQUE INDEX "UQ_payments_provider_payment_id" ON "payments" ("provider_payment_id") WHERE "provider_payment_id" IS NOT NULL`,
+      );
+      await queryRunner.query(
+        `CREATE UNIQUE INDEX "UQ_payments_pending_appointment" ON "payments" ("appointment_id") WHERE "status" = 'PENDING' AND "appointment_id" IS NOT NULL`,
+      );
+      await queryRunner.query(
+        `CREATE UNIQUE INDEX "UQ_payments_paid_appointment" ON "payments" ("appointment_id") WHERE "status" = 'PAID' AND "appointment_id" IS NOT NULL`,
+      );
+      await queryRunner.query(
+        `CREATE UNIQUE INDEX "UQ_payments_pending_client_product" ON "payments" ("client_product_id") WHERE "status" = 'PENDING' AND "client_product_id" IS NOT NULL`,
+      );
+      await queryRunner.query(
+        `CREATE UNIQUE INDEX "UQ_payments_paid_client_product" ON "payments" ("client_product_id") WHERE "status" = 'PAID' AND "client_product_id" IS NOT NULL`,
+      );
 
       await queryRunner.query(`
         INSERT INTO "payments" (
@@ -60,14 +88,30 @@ export class IndependentPayments1760000000000 implements MigrationInterface {
         FROM "appointments"
         WHERE "payment_id" IS NOT NULL OR "payment_url" IS NOT NULL
       `);
-      await queryRunner.query(`UPDATE "appointments" SET "status" = 'scheduled' WHERE "status" = 'pending_payment'`);
-      await queryRunner.query(`ALTER TABLE "appointments" DROP COLUMN "payment_id"`);
-      await queryRunner.query(`ALTER TABLE "appointments" DROP COLUMN "payment_url"`);
-      await queryRunner.query(`ALTER TABLE "appointments" ALTER COLUMN "status" DROP DEFAULT`);
-      await queryRunner.query(`ALTER TYPE "appointments_status_enum" RENAME TO "appointments_status_enum_old"`);
-      await queryRunner.query(`CREATE TYPE "appointments_status_enum" AS ENUM ('scheduled','completed','cancelled')`);
-      await queryRunner.query(`ALTER TABLE "appointments" ALTER COLUMN "status" TYPE "appointments_status_enum" USING "status"::text::"appointments_status_enum"`);
-      await queryRunner.query(`ALTER TABLE "appointments" ALTER COLUMN "status" SET DEFAULT 'scheduled'`);
+      await queryRunner.query(
+        `UPDATE "appointments" SET "status" = 'scheduled' WHERE "status" = 'pending_payment'`,
+      );
+      await queryRunner.query(
+        `ALTER TABLE "appointments" DROP COLUMN "payment_id"`,
+      );
+      await queryRunner.query(
+        `ALTER TABLE "appointments" DROP COLUMN "payment_url"`,
+      );
+      await queryRunner.query(
+        `ALTER TABLE "appointments" ALTER COLUMN "status" DROP DEFAULT`,
+      );
+      await queryRunner.query(
+        `ALTER TYPE "appointments_status_enum" RENAME TO "appointments_status_enum_old"`,
+      );
+      await queryRunner.query(
+        `CREATE TYPE "appointments_status_enum" AS ENUM ('scheduled','completed','cancelled')`,
+      );
+      await queryRunner.query(
+        `ALTER TABLE "appointments" ALTER COLUMN "status" TYPE "appointments_status_enum" USING "status"::text::"appointments_status_enum"`,
+      );
+      await queryRunner.query(
+        `ALTER TABLE "appointments" ALTER COLUMN "status" SET DEFAULT 'scheduled'`,
+      );
       await queryRunner.query(`DROP TYPE "appointments_status_enum_old"`);
       await queryRunner.commitTransaction();
     } catch (error) {
@@ -77,14 +121,28 @@ export class IndependentPayments1760000000000 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`ALTER TABLE "appointments" ALTER COLUMN "status" DROP DEFAULT`);
-    await queryRunner.query(`ALTER TYPE "appointments_status_enum" RENAME TO "appointments_status_enum_new"`);
-    await queryRunner.query(`CREATE TYPE "appointments_status_enum" AS ENUM ('scheduled','pending_payment','completed','cancelled')`);
-    await queryRunner.query(`ALTER TABLE "appointments" ALTER COLUMN "status" TYPE "appointments_status_enum" USING "status"::text::"appointments_status_enum"`);
-    await queryRunner.query(`ALTER TABLE "appointments" ALTER COLUMN "status" SET DEFAULT 'scheduled'`);
+    await queryRunner.query(
+      `ALTER TABLE "appointments" ALTER COLUMN "status" DROP DEFAULT`,
+    );
+    await queryRunner.query(
+      `ALTER TYPE "appointments_status_enum" RENAME TO "appointments_status_enum_new"`,
+    );
+    await queryRunner.query(
+      `CREATE TYPE "appointments_status_enum" AS ENUM ('scheduled','pending_payment','completed','cancelled')`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "appointments" ALTER COLUMN "status" TYPE "appointments_status_enum" USING "status"::text::"appointments_status_enum"`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "appointments" ALTER COLUMN "status" SET DEFAULT 'scheduled'`,
+    );
     await queryRunner.query(`DROP TYPE "appointments_status_enum_new"`);
-    await queryRunner.query(`ALTER TABLE "appointments" ADD "payment_url" varchar`);
-    await queryRunner.query(`ALTER TABLE "appointments" ADD "payment_id" varchar`);
+    await queryRunner.query(
+      `ALTER TABLE "appointments" ADD "payment_url" varchar`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "appointments" ADD "payment_id" varchar`,
+    );
     await queryRunner.query(`DROP TABLE "payments"`);
     await queryRunner.query(`ALTER TABLE "products" DROP COLUMN "type"`);
     await queryRunner.query(`DROP TYPE "payments_status_enum"`);
