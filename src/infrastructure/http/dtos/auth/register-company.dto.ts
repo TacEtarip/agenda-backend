@@ -20,8 +20,8 @@ export class RegisterCompanyDto {
 
   @IsString()
   @IsNotEmpty()
-  @Matches(/^\+?[0-9\s()-]{7,20}$/, {
-    message: 'El número de celular no es válido',
+  @Matches(/^\+51\d{9}$/, {
+    message: 'El número de celular debe tener el formato +51 seguido de 9 dígitos',
   })
   phone!: string;
 
