@@ -6,6 +6,7 @@ export class UserResponseDto {
   email!: string;
   firstName!: string;
   lastName!: string;
+  phone?: string;
   integrationProvider?: string;
   syncCalendar?: boolean;
   syncContacts?: boolean;
@@ -20,6 +21,7 @@ export class UserResponseDto {
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
+      phone: user.phone,
       integrationProvider: user.integrationProvider,
       syncCalendar: user.syncCalendar,
       syncContacts: user.syncContacts,

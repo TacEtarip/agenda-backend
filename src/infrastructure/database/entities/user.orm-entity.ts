@@ -45,6 +45,9 @@ export class UserOrmEntity {
   @Column({ name: 'last_name' })
   lastName!: string;
 
+  @Column({ type: 'varchar', nullable: true })
+  phone!: string | null;
+
   @Column({ name: 'integration_provider', default: 'none' })
   integrationProvider!: string;
 

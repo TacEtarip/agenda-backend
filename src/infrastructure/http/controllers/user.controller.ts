@@ -17,6 +17,7 @@ import { JwtAuthGuard } from '@infrastructure/auth/guards/jwt-auth.guard';
 import { CurrentUser } from '@infrastructure/auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '@infrastructure/auth/strategies/jwt.strategy';
 import { UserResponseDto } from '../dtos/user/user-response.dto';
+import { UpdateUserProfileDto } from '../dtos/user/update-user-profile.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('users')
@@ -69,5 +70,17 @@ export class UserController {
         paymentEnabled: user.paymentEnabled,
       },
     };
+  }
+
+  @Patch('me/profile')
+  async updateProfile(
+    @CurrentUser() currentUser: AuthenticatedUser,
+    @Body() updateUserProfileDto: UpdateUserProfileDto,
+  ) {
+    const user = await this.userService.updateUserProfile(
+      currentUser.userId,
+      updateUserProfileDto,
+    );
+    return UserResponseDto.fromDomain(user);
   }
 }

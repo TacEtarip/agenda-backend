@@ -68,13 +68,13 @@ export class PaymentOrmEntity {
   @Column({ type: 'enum', enum: PaymentMethod })
   method!: PaymentMethod;
 
-  @Column({ name: 'provider_payment_id', nullable: true })
+  @Column({ name: 'provider_payment_id', type: 'varchar', nullable: true })
   providerPaymentId!: string | null;
 
   @Column({ name: 'checkout_url', type: 'text', nullable: true })
   checkoutUrl!: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   reference!: string | null;
 
   @Column({ name: 'paid_at', type: 'timestamp', nullable: true })

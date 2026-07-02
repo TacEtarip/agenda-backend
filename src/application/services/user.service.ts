@@ -37,4 +37,20 @@ export class UserService {
     }
     return this.userRepository.update(id, data);
   }
+
+  async updateUserProfile(id: string, data: Partial<User>): Promise<User> {
+    const user = await this.userRepository.findById(id);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    if (data.email && data.email !== user.email) {
+      const existingUser = await this.userRepository.findByEmail(data.email);
+      if (existingUser && existingUser.id !== id) {
+        throw new ConflictException('User with this email already exists');
+      }
+    }
+
+    return this.userRepository.update(id, data);
+  }
 }
