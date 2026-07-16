@@ -28,8 +28,29 @@ yarn-error.log
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-!.vscode/mcp.json
 .history/*
+
+# Local AI assistants and generated workspace state
+/.agents/
+/.ai/
+/.aider*
+/.claude/
+/.codex/
+/.codex-run/
+/.codex-*
+/.continue/
+/.copilot/
+/.cursor/
+/.gemini/
+/.windsurf/
+/.cursorrules
+/.windsurfrules
+/AGENTS.md
+/CLAUDE.md
+/GEMINI.md
+/.github/copilot-instructions.md
+/.github/instructions/
+/.github/prompts/
 
 # Miscellaneous
 /.angular/cache
@@ -44,8 +65,6 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
-
-.codex-*
 
 /.wwebjs_auth
 
