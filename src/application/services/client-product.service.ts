@@ -11,6 +11,9 @@ import type { IClientRepository } from '@domain/ports/client.repository.interfac
 import { PRODUCT_REPOSITORY } from '@domain/ports/product.repository.interface';
 import type { IProductRepository } from '@domain/ports/product.repository.interface';
 import { ClientProduct } from '@domain/models/client-product.model';
+import { ClientProductStatus } from '@domain/enums/client-product-status.enum';
+import { Product } from '@domain/models/product.model';
+import { ProductType } from '@domain/enums/product-type.enum';
 
 @Injectable()
 export class ClientProductService {
@@ -35,10 +38,11 @@ export class ClientProductService {
   private async assertProductExists(
     productId: string,
     companyId: string,
-  ): Promise<void> {
+  ): Promise<Product> {
     const product = await this.productRepository.findById(productId);
     if (!product?.companyId || product.companyId !== companyId)
       throw new NotFoundException(`Product ${productId} not found`);
+    return product;
   }
 
   async createClientProduct(
@@ -49,11 +53,16 @@ export class ClientProductService {
     if (!data.productId) throw new Error('productId is required');
 
     await this.assertClientExists(data.clientId, companyId);
-    await this.assertProductExists(data.productId, companyId);
+    const product = await this.assertProductExists(data.productId, companyId);
+    data.quantity =
+      product.type === ProductType.PRODUCT ? (data.quantity ?? 1) : null;
 
-    const existing = await this.clientProductRepository.findByClientAndProduct(
-      data.clientId,
-      data.productId,
+    const existing = (
+      await this.clientProductRepository.findAllByClientId(data.clientId)
+    ).find(
+      (clientProduct) =>
+        clientProduct.productId === data.productId &&
+        clientProduct.status !== ClientProductStatus.SOLD,
     );
     if (existing) {
       throw new ConflictException(
@@ -103,6 +112,16 @@ export class ClientProductService {
     if (data.clientId) await this.assertClientExists(data.clientId, companyId);
     if (data.productId)
       await this.assertProductExists(data.productId, companyId);
+
+    if (data.quantity !== undefined) {
+      const clientProduct = await this.getClientProductById(id, companyId);
+      const product = await this.assertProductExists(
+        data.productId ?? clientProduct.productId,
+        companyId,
+      );
+      data.quantity =
+        product.type === ProductType.PRODUCT ? data.quantity : null;
+    }
 
     return this.clientProductRepository.update(id, data);
   }

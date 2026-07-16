@@ -7,6 +7,8 @@ export class ClientProduct {
   status!: ClientProductStatus;
   offeredAt!: Date;
   updatedAt!: Date;
+  customPrice?: number | null;
+  quantity?: number | null;
   notes?: string;
 
   constructor(partial: Partial<ClientProduct>) {

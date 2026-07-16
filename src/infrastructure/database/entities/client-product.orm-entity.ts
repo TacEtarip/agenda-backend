@@ -26,6 +26,12 @@ export class ClientProductOrmEntity {
   @Column({ type: 'text', nullable: true })
   notes!: string | null;
 
+  @Column({ name: 'custom_price', type: 'decimal', precision: 12, scale: 2, nullable: true })
+  customPrice!: number | null;
+
+  @Column({ type: 'integer', nullable: true })
+  quantity!: number | null;
+
   @CreateDateColumn({ name: 'offered_at' })
   offeredAt!: Date;
 

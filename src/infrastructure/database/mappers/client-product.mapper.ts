@@ -9,6 +9,11 @@ export class ClientProductMapper {
       productId: ormEntity.productId,
       status: ormEntity.status,
       notes: ormEntity.notes ?? undefined,
+      customPrice:
+        ormEntity.customPrice !== null && ormEntity.customPrice !== undefined
+          ? Number(ormEntity.customPrice)
+          : undefined,
+      quantity: ormEntity.quantity ?? undefined,
       offeredAt: ormEntity.offeredAt,
       updatedAt: ormEntity.updatedAt,
     });
@@ -27,6 +32,10 @@ export class ClientProductMapper {
       ormEntity.status = domainClientProduct.status;
     if (domainClientProduct.notes !== undefined)
       ormEntity.notes = domainClientProduct.notes;
+    if (domainClientProduct.customPrice !== undefined)
+      ormEntity.customPrice = domainClientProduct.customPrice;
+    if (domainClientProduct.quantity !== undefined)
+      ormEntity.quantity = domainClientProduct.quantity;
     if (domainClientProduct.offeredAt)
       ormEntity.offeredAt = domainClientProduct.offeredAt;
     return ormEntity;
