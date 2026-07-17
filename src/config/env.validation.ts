@@ -56,6 +56,16 @@ export function validateEnv(config: Env): Env {
         throw new Error(`${key} must be a valid HTTP(S) URL`);
       }
     }
+    if (config.GOOGLE_CALENDAR_WEBHOOK_URL) {
+      try {
+        const webhookUrl = new URL(config.GOOGLE_CALENDAR_WEBHOOK_URL);
+        if (webhookUrl.protocol !== 'https:') throw new Error();
+      } catch {
+        throw new Error(
+          'GOOGLE_CALENDAR_WEBHOOK_URL must be a valid HTTPS URL',
+        );
+      }
+    }
   }
 
   return config;

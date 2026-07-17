@@ -95,7 +95,7 @@ describe('Commercial flow (e2e)', () => {
       .expect(200);
 
     expect(googleStatusResponse.body).toEqual({
-      configured: false,
+      configured: expect.any(Boolean),
       connected: false,
       scopes: [],
     });

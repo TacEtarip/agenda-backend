@@ -44,6 +44,40 @@ export class GoogleIntegrationOrmEntity {
   @Column({ name: 'expires_at', type: 'timestamptz', nullable: true })
   expiresAt!: Date | null;
 
+  @Column({ name: 'calendar_id', default: 'primary' })
+  calendarId!: string;
+
+  @Column({ name: 'calendar_sync_token', type: 'text', nullable: true })
+  calendarSyncToken!: string | null;
+
+  @Column({
+    name: 'webhook_channel_id',
+    type: 'varchar',
+    unique: true,
+    nullable: true,
+  })
+  webhookChannelId!: string | null;
+
+  @Column({ name: 'webhook_resource_id', type: 'varchar', nullable: true })
+  webhookResourceId!: string | null;
+
+  @Column({
+    name: 'webhook_token_hash',
+    type: 'char',
+    length: 64,
+    nullable: true,
+  })
+  webhookTokenHash!: string | null;
+
+  @Column({ name: 'webhook_expires_at', type: 'timestamptz', nullable: true })
+  webhookExpiresAt!: Date | null;
+
+  @Column({ name: 'inbound_synced_at', type: 'timestamptz', nullable: true })
+  inboundSyncedAt!: Date | null;
+
+  @Column({ name: 'inbound_sync_error', type: 'text', nullable: true })
+  inboundSyncError!: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 

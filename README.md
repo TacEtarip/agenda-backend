@@ -57,6 +57,27 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
+## Google Calendar synchronization and cost
+
+The Google Calendar integration is bidirectional. In local development, where
+there is no public HTTPS webhook, each linked user is checked incrementally once
+per minute. This represents approximately 1,440 Calendar API requests per day
+per linked user, plus requests generated when appointments are created, edited,
+or cancelled.
+
+For production, configure a public HTTPS endpoint so Google can notify the
+backend only when a calendar changes:
+
+```dotenv
+GOOGLE_CALENDAR_WEBHOOK_URL=https://api.example.com/integrations/google/webhook
+```
+
+As of July 17, 2026, Google documents standard Calendar API usage at no
+additional cost below its daily threshold of 1,000,000 requests per project.
+Google has announced that requests above that threshold may incur charges later
+in 2026. Verify the current limits before deployment:
+[Google Calendar API usage limits](https://developers.google.com/workspace/calendar/api/guides/quota).
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.

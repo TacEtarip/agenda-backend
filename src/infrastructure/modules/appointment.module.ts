@@ -5,11 +5,24 @@ import { AppointmentController } from '../http/controllers/appointment.controlle
 import { DatabaseModule } from '../database/database.module';
 import { MessagingModule } from '../messaging/messaging.module';
 import { MessageTemplateModule } from './message-template.module';
+import { GoogleIntegrationModule } from './google-integration.module';
+import { GoogleCalendarSyncService } from '@application/services/google-calendar-sync.service';
+import { AppointmentExpirationCron } from '@application/services/appointment-expiration.cron';
 
 @Module({
-  imports: [DatabaseModule, MessagingModule, MessageTemplateModule],
+  imports: [
+    DatabaseModule,
+    MessagingModule,
+    MessageTemplateModule,
+    GoogleIntegrationModule,
+  ],
   controllers: [AppointmentController],
-  providers: [AppointmentService, AppointmentReminderCron],
-  exports: [AppointmentService],
+  providers: [
+    AppointmentService,
+    AppointmentReminderCron,
+    AppointmentExpirationCron,
+    GoogleCalendarSyncService,
+  ],
+  exports: [AppointmentService, GoogleCalendarSyncService],
 })
 export class AppointmentModule {}

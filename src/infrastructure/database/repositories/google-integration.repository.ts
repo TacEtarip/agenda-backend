@@ -32,6 +32,20 @@ export class GoogleIntegrationRepository implements IGoogleIntegrationRepository
     return entity ? this.toDomain(entity) : null;
   }
 
+  async findByWebhookChannelId(
+    channelId: string,
+  ): Promise<GoogleIntegration | null> {
+    const entity = await this.integrations.findOne({
+      where: { webhookChannelId: channelId },
+    });
+    return entity ? this.toDomain(entity) : null;
+  }
+
+  async findAll(): Promise<GoogleIntegration[]> {
+    const entities = await this.integrations.find();
+    return entities.map((entity) => this.toDomain(entity));
+  }
+
   async upsert(
     integration: Partial<GoogleIntegration> &
       Pick<
@@ -58,6 +72,42 @@ export class GoogleIntegrationRepository implements IGoogleIntegrationRepository
     await this.integrations.delete({ userId });
   }
 
+  async updateTokens(
+    userId: string,
+    tokens: {
+      accessTokenEncrypted: string;
+      refreshTokenEncrypted?: string;
+      expiresAt?: Date;
+    },
+  ): Promise<void> {
+    await this.integrations.update(
+      { userId },
+      {
+        accessTokenEncrypted: tokens.accessTokenEncrypted,
+        ...(tokens.refreshTokenEncrypted
+          ? { refreshTokenEncrypted: tokens.refreshTokenEncrypted }
+          : {}),
+        expiresAt: tokens.expiresAt ?? null,
+      },
+    );
+  }
+
+  async updateCalendarSync(
+    userId: string,
+    data: {
+      calendarId?: string;
+      calendarSyncToken?: string | null;
+      webhookChannelId?: string | null;
+      webhookResourceId?: string | null;
+      webhookTokenHash?: string | null;
+      webhookExpiresAt?: Date | null;
+      inboundSyncedAt?: Date | null;
+      inboundSyncError?: string | null;
+    },
+  ): Promise<void> {
+    await this.integrations.update({ userId }, data);
+  }
+
   async createState(stateHash: string, state: GoogleOAuthState): Promise<void> {
     await this.states.delete({ expiresAt: LessThan(new Date()) });
     await this.states.delete({ userId: state.userId });
@@ -69,7 +119,7 @@ export class GoogleIntegrationRepository implements IGoogleIntegrationRepository
       .createQueryBuilder()
       .delete()
       .where('state_hash = :stateHash', { stateHash })
-      .returning(['user_id', 'company_id', 'expires_at'])
+      .returning(['userId', 'companyId', 'expiresAt'])
       .execute();
     const state = result.raw[0] as
       | { user_id: string; company_id: string; expires_at: Date | string }
@@ -94,6 +144,14 @@ export class GoogleIntegrationRepository implements IGoogleIntegrationRepository
       scope: entity.scope,
       tokenType: entity.tokenType,
       expiresAt: entity.expiresAt ?? undefined,
+      calendarId: entity.calendarId,
+      calendarSyncToken: entity.calendarSyncToken ?? undefined,
+      webhookChannelId: entity.webhookChannelId ?? undefined,
+      webhookResourceId: entity.webhookResourceId ?? undefined,
+      webhookTokenHash: entity.webhookTokenHash ?? undefined,
+      webhookExpiresAt: entity.webhookExpiresAt ?? undefined,
+      inboundSyncedAt: entity.inboundSyncedAt ?? undefined,
+      inboundSyncError: entity.inboundSyncError ?? undefined,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     });

@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { GoogleIntegration } from '@domain/models/google-integration.model';
 import type { IGoogleIntegrationRepository } from '@domain/ports/google-integration.repository.interface';
+import type { IAppointmentRepository } from '@domain/ports/appointment.repository.interface';
 import type { IGoogleOAuthProvider } from '@domain/ports/google-oauth.provider.interface';
 import type { ITokenCipher } from '@domain/ports/token-cipher.interface';
 import type { IUserRepository } from '@domain/ports/user.repository.interface';
@@ -25,6 +26,7 @@ describe('GoogleIntegrationService', () => {
     scope: 'openid email https://www.googleapis.com/auth/calendar.events',
     tokenType: 'Bearer',
     expiresAt: new Date(Date.now() + 3_600_000),
+    calendarId: 'primary',
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -33,11 +35,15 @@ describe('GoogleIntegrationService', () => {
     const integrations = {
       findByUserId: jest.fn().mockResolvedValue(null),
       findByGoogleSubject: jest.fn().mockResolvedValue(null),
+      findByWebhookChannelId: jest.fn().mockResolvedValue(null),
+      findAll: jest.fn().mockResolvedValue([]),
       upsert: jest.fn().mockResolvedValue(connection),
       deleteByUserId: jest.fn().mockResolvedValue(undefined),
+      updateTokens: jest.fn().mockResolvedValue(undefined),
+      updateCalendarSync: jest.fn().mockResolvedValue(undefined),
       createState: jest.fn().mockResolvedValue(undefined),
       consumeState: jest.fn().mockResolvedValue(null),
-    } as jest.Mocked<IGoogleIntegrationRepository>;
+    } as unknown as jest.Mocked<IGoogleIntegrationRepository>;
     const google = {
       isConfigured: jest.fn().mockReturnValue(true),
       getAuthorizationUrl: jest
@@ -59,20 +65,39 @@ describe('GoogleIntegrationService', () => {
     } as jest.Mocked<IGoogleOAuthProvider>;
     const cipher = {
       isConfigured: jest.fn().mockReturnValue(true),
-      encrypt: jest.fn((value: string) => `encrypted:${value}`),
+      encrypt: jest.fn(
+        (value: string, _context: string) => `encrypted:${value}`,
+      ),
       decrypt: jest.fn().mockReturnValue('refresh-token'),
-    } as jest.Mocked<ITokenCipher>;
+    } as unknown as jest.Mocked<ITokenCipher>;
     const users = {
       findByGoogleId: jest.fn().mockResolvedValue(null),
       update: jest.fn().mockResolvedValue({ id: user.userId }),
     } as unknown as jest.Mocked<IUserRepository>;
+    const appointments = {
+      scheduleAllForUser: jest.fn().mockResolvedValue([]),
+    } as unknown as jest.Mocked<IAppointmentRepository>;
+    const inboundSync = {
+      triggerSetup: jest.fn(),
+      stopForUser: jest.fn().mockResolvedValue(undefined),
+    };
     const service = new GoogleIntegrationService(
       integrations,
       google,
       cipher,
       users,
+      appointments,
+      inboundSync as never,
     );
-    return { service, integrations, google, cipher, users };
+    return {
+      service,
+      integrations,
+      google,
+      cipher,
+      users,
+      appointments,
+      inboundSync,
+    };
   };
 
   it('creates a one-time authorization state and returns the Google URL', async () => {
@@ -96,7 +121,8 @@ describe('GoogleIntegrationService', () => {
   });
 
   it('exchanges a valid callback and stores encrypted tokens', async () => {
-    const { service, integrations, cipher, users } = setup();
+    const { service, integrations, cipher, users, appointments, inboundSync } =
+      setup();
     integrations.consumeState.mockResolvedValue({
       userId: user.userId,
       companyId: user.companyId!,
@@ -129,6 +155,8 @@ describe('GoogleIntegrationService', () => {
         syncCalendar: true,
       }),
     );
+    expect(appointments.scheduleAllForUser).toHaveBeenCalledWith(user.userId);
+    expect(inboundSync.triggerSetup).toHaveBeenCalledWith(user.userId);
   });
 
   it('rejects an expired authorization state before exchanging the code', async () => {
@@ -189,11 +217,13 @@ describe('GoogleIntegrationService', () => {
   });
 
   it('revokes the refresh token and removes the local connection', async () => {
-    const { service, integrations, google, cipher, users } = setup();
+    const { service, integrations, google, cipher, users, inboundSync } =
+      setup();
     integrations.findByUserId.mockResolvedValueOnce(connection);
 
     const result = await service.disconnect(user);
 
+    expect(inboundSync.stopForUser).toHaveBeenCalledWith(user.userId);
     expect(cipher.decrypt).toHaveBeenCalledWith(
       connection.refreshTokenEncrypted,
       `google:${user.userId}`,

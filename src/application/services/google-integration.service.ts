@@ -19,6 +19,9 @@ import type { ITokenCipher } from '@domain/ports/token-cipher.interface';
 import { USER_REPOSITORY } from '@domain/ports/user.repository.interface';
 import type { IUserRepository } from '@domain/ports/user.repository.interface';
 import type { AuthenticatedUser } from '@infrastructure/auth/strategies/jwt.strategy';
+import { APPOINTMENT_REPOSITORY } from '@domain/ports/appointment.repository.interface';
+import type { IAppointmentRepository } from '@domain/ports/appointment.repository.interface';
+import { GoogleCalendarInboundSyncService } from './google-calendar-inbound-sync.service';
 
 const STATE_TTL_MS = 10 * 60 * 1000;
 const GOOGLE_CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.events';
@@ -44,6 +47,9 @@ export class GoogleIntegrationService {
     private readonly cipher: ITokenCipher,
     @Inject(USER_REPOSITORY)
     private readonly users: IUserRepository,
+    @Inject(APPOINTMENT_REPOSITORY)
+    private readonly appointments: IAppointmentRepository,
+    private readonly inboundSync: GoogleCalendarInboundSyncService,
   ) {}
 
   async getStatus(user: AuthenticatedUser): Promise<GoogleIntegrationStatus> {
@@ -146,6 +152,15 @@ export class GoogleIntegrationService {
       integrationProvider: 'google',
       syncCalendar: true,
     });
+    try {
+      await this.appointments.scheduleAllForUser(oauthState.userId);
+    } catch (error) {
+      this.logger.warn(
+        `Could not schedule existing appointments for Google user ${oauthState.userId}`,
+        error,
+      );
+    }
+    this.inboundSync.triggerSetup(oauthState.userId);
   }
 
   async discardState(state?: string): Promise<void> {
@@ -156,6 +171,7 @@ export class GoogleIntegrationService {
   async disconnect(user: AuthenticatedUser): Promise<GoogleIntegrationStatus> {
     const integration = await this.integrations.findByUserId(user.userId);
     if (integration && integration.companyId === user.companyId) {
+      await this.inboundSync.stopForUser(user.userId);
       try {
         const encryptedToken =
           integration.refreshTokenEncrypted || integration.accessTokenEncrypted;

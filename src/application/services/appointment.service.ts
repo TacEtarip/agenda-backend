@@ -1,5 +1,10 @@
 import { AppointmentStatus } from '@domain/enums/appointment-status.enum';
+import {
+  CalendarSyncOperation,
+  CalendarSyncStatus,
+} from '@domain/enums/calendar-sync-status.enum';
 import { Appointment } from '@domain/models/appointment.model';
+import { User } from '@domain/models/user.model';
 import { Client } from '@domain/models/client.model';
 import type { IAppointmentRepository } from '@domain/ports/appointment.repository.interface';
 import { APPOINTMENT_REPOSITORY } from '@domain/ports/appointment.repository.interface';
@@ -8,11 +13,13 @@ import { CLIENT_REPOSITORY } from '@domain/ports/client.repository.interface';
 import type { IUserRepository } from '@domain/ports/user.repository.interface';
 import { USER_REPOSITORY } from '@domain/ports/user.repository.interface';
 import {
+  BadRequestException,
   ConflictException,
   Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { GoogleCalendarSyncService } from './google-calendar-sync.service';
 
 @Injectable()
 export class AppointmentService {
@@ -23,6 +30,7 @@ export class AppointmentService {
     private readonly clientRepository: IClientRepository,
     @Inject(USER_REPOSITORY)
     private readonly userRepository: IUserRepository,
+    private readonly googleCalendarSync: GoogleCalendarSyncService,
   ) {}
 
   private async getClientAssertExists(
@@ -40,13 +48,21 @@ export class AppointmentService {
     if (!data.clientId) throw new Error('clientId is required');
     if (!data.userId) throw new Error('userId is required');
     if (!data.companyId) throw new Error('companyId is required');
+    this.assertValidSchedule(data.startTime, data.endTime);
     await this.getClientAssertExists(data.clientId, data.companyId);
     const user = await this.userRepository.findById(data.userId);
     if (!user?.companyId || user.companyId !== data.companyId) {
       throw new NotFoundException(`User ${data.userId} not found`);
     }
 
-    return this.appointmentRepository.create(data);
+    const created = await this.appointmentRepository.create({
+      ...data,
+      ...this.calendarSyncFields(user, data.status),
+    });
+    if (created.calendarSyncStatus === CalendarSyncStatus.PENDING) {
+      this.googleCalendarSync.trigger(created.id);
+    }
+    return created;
   }
 
   async getAppointmentById(
@@ -77,6 +93,7 @@ export class AppointmentService {
     companyId: string,
   ): Promise<Appointment> {
     const appointment = await this.getAppointmentById(id, companyId);
+    const user = await this.userRepository.findById(appointment.userId);
     if (appointment.status === AppointmentStatus.COMPLETED) {
       const hasNonDescriptionChanges = [
         data.title,
@@ -93,7 +110,7 @@ export class AppointmentService {
         );
       }
 
-      return this.appointmentRepository.update(id, {
+      return this.updateWithCalendarSync(appointment, user, {
         description: data.description,
         companyId,
       });
@@ -108,29 +125,152 @@ export class AppointmentService {
       data.meetingUrl,
     ].some((value) => value !== undefined);
 
+    const isInactiveAppointment = [
+      AppointmentStatus.CANCELLED,
+      AppointmentStatus.EXPIRED,
+    ].includes(appointment.status);
+
     if (
-      appointment.status === AppointmentStatus.CANCELLED &&
+      isInactiveAppointment &&
       data.status !== undefined &&
       data.status !== AppointmentStatus.SCHEDULED
     ) {
       throw new ConflictException(
-        'Cancelled appointments must be rescheduled before changing status',
+        'Cancelled or expired appointments must be rescheduled before changing status',
       );
     }
 
     const normalizedData =
-      appointment.status === AppointmentStatus.CANCELLED && hasAppointmentEdits
+      isInactiveAppointment && hasAppointmentEdits
         ? { ...data, status: AppointmentStatus.SCHEDULED }
         : data;
 
-    return this.appointmentRepository.update(id, {
+    const reschedulesInactiveAppointment =
+      isInactiveAppointment &&
+      (hasAppointmentEdits || data.status === AppointmentStatus.SCHEDULED);
+    if (
+      data.startTime !== undefined ||
+      data.endTime !== undefined ||
+      reschedulesInactiveAppointment
+    ) {
+      this.assertValidSchedule(
+        data.startTime ?? appointment.startTime,
+        data.endTime ?? appointment.endTime,
+      );
+    }
+
+    return this.updateWithCalendarSync(appointment, user, {
       ...normalizedData,
       companyId,
     });
   }
 
   async deleteAppointment(id: string, companyId: string): Promise<void> {
-    await this.getAppointmentById(id, companyId); // asserts ownership
-    await this.appointmentRepository.delete(id);
+    const appointment = await this.getAppointmentById(id, companyId);
+    const user = await this.userRepository.findById(appointment.userId);
+    if (this.shouldSyncCalendar(user)) {
+      await this.appointmentRepository.update(id, {
+        calendarSyncStatus: CalendarSyncStatus.PENDING,
+        calendarSyncOperation: CalendarSyncOperation.DELETE,
+        calendarSyncError: null,
+        calendarSyncAttempts: 0,
+        calendarSyncNextAttemptAt: null,
+      });
+      await this.appointmentRepository.softDelete(id);
+      this.googleCalendarSync.trigger(id);
+      return;
+    }
+    await this.appointmentRepository.hardDelete(id);
+  }
+
+  async retryCalendarSync(id: string, companyId: string): Promise<Appointment> {
+    const appointment = await this.getAppointmentById(id, companyId);
+    const user = await this.userRepository.findById(appointment.userId);
+    if (!this.shouldSyncCalendar(user)) {
+      throw new ConflictException(
+        'Google Calendar must be linked and enabled before retrying',
+      );
+    }
+    const updated = await this.appointmentRepository.update(id, {
+      ...this.calendarSyncFields(user, appointment.status),
+    });
+    this.googleCalendarSync.trigger(id);
+    return updated;
+  }
+
+  private async updateWithCalendarSync(
+    appointment: Appointment,
+    user: User | null,
+    data: Partial<Appointment>,
+  ): Promise<Appointment> {
+    const updated = await this.appointmentRepository.update(appointment.id, {
+      ...data,
+      ...this.calendarSyncFields(user, data.status ?? appointment.status),
+    });
+    if (updated.calendarSyncStatus === CalendarSyncStatus.PENDING) {
+      this.googleCalendarSync.trigger(updated.id);
+    }
+    return updated;
+  }
+
+  private calendarSyncFields(
+    user: User | null,
+    status = AppointmentStatus.SCHEDULED,
+  ): Partial<Appointment> {
+    if (!this.shouldSyncCalendar(user)) {
+      return {
+        calendarSyncStatus: CalendarSyncStatus.NOT_SYNCED,
+        calendarSyncOperation: null,
+        calendarSyncError: null,
+        calendarSyncAttempts: 0,
+        calendarSyncNextAttemptAt: null,
+      };
+    }
+    return {
+      calendarSyncStatus: CalendarSyncStatus.PENDING,
+      calendarSyncOperation:
+        status === AppointmentStatus.CANCELLED
+          ? CalendarSyncOperation.DELETE
+          : CalendarSyncOperation.UPSERT,
+      calendarSyncError: null,
+      calendarSyncAttempts: 0,
+      calendarSyncNextAttemptAt: null,
+    };
+  }
+
+  private shouldSyncCalendar(user: User | null): boolean {
+    return Boolean(
+      user?.googleId &&
+      user.integrationProvider === 'google' &&
+      user.syncCalendar !== false,
+    );
+  }
+
+  private assertValidSchedule(startTime?: Date, endTime?: Date): void {
+    const startTimestamp = startTime?.getTime();
+    const endTimestamp = endTime?.getTime();
+
+    if (
+      startTimestamp === undefined ||
+      endTimestamp === undefined ||
+      Number.isNaN(startTimestamp) ||
+      Number.isNaN(endTimestamp)
+    ) {
+      throw new BadRequestException(
+        'A valid appointment start and end time are required',
+      );
+    }
+
+    if (startTimestamp < Date.now()) {
+      throw new BadRequestException(
+        'Appointment start time cannot be in the past',
+      );
+    }
+
+    if (endTimestamp <= startTimestamp) {
+      throw new BadRequestException(
+        'Appointment end time must be after its start time',
+      );
+    }
   }
 }

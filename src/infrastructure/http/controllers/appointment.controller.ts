@@ -28,15 +28,13 @@ export class AppointmentController {
     @Body() dto: CreateAppointmentDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.appointmentService.createAppointment(
-      {
-        ...dto,
-        startTime: new Date(dto.startTime),
-        endTime: new Date(dto.endTime),
-        companyId: user.companyId,
-        userId: user.userId,
-      },
-    );
+    return this.appointmentService.createAppointment({
+      ...dto,
+      startTime: new Date(dto.startTime),
+      endTime: new Date(dto.endTime),
+      companyId: user.companyId,
+      userId: user.userId,
+    });
   }
 
   @Get()
@@ -62,10 +60,7 @@ export class AppointmentController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.appointmentService.getAppointmentById(
-      id,
-      user.companyId || '',
-    );
+    return this.appointmentService.getAppointmentById(id, user.companyId || '');
   }
 
   @Put(':id')
@@ -83,6 +78,14 @@ export class AppointmentController {
       },
       user.companyId || '',
     );
+  }
+
+  @Post(':id/calendar-sync/retry')
+  retryCalendarSync(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.appointmentService.retryCalendarSync(id, user.companyId || '');
   }
 
   @Delete(':id')

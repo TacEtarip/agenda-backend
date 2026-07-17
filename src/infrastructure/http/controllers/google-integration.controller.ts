@@ -2,6 +2,9 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
+  HttpCode,
+  HttpStatus,
   Logger,
   Post,
   Query,
@@ -14,6 +17,7 @@ import { GoogleIntegrationService } from '@application/services/google-integrati
 import { CurrentUser } from '@infrastructure/auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '@infrastructure/auth/guards/jwt-auth.guard';
 import type { AuthenticatedUser } from '@infrastructure/auth/strategies/jwt.strategy';
+import { GoogleCalendarInboundSyncService } from '@application/services/google-calendar-inbound-sync.service';
 
 @Controller('integrations/google')
 export class GoogleIntegrationController {
@@ -21,8 +25,25 @@ export class GoogleIntegrationController {
 
   constructor(
     private readonly googleIntegration: GoogleIntegrationService,
+    private readonly inboundSync: GoogleCalendarInboundSyncService,
     private readonly config: ConfigService,
   ) {}
+
+  @Post('webhook')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async webhook(
+    @Headers('x-goog-channel-id') channelId?: string,
+    @Headers('x-goog-resource-id') resourceId?: string,
+    @Headers('x-goog-resource-state') resourceState?: string,
+    @Headers('x-goog-channel-token') token?: string,
+  ): Promise<void> {
+    await this.inboundSync.handleNotification({
+      channelId,
+      resourceId,
+      resourceState,
+      token,
+    });
+  }
 
   @UseGuards(JwtAuthGuard)
   @Get('status')

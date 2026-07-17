@@ -1,13 +1,19 @@
-import { Injectable, Inject, ConflictException } from '@nestjs/common';
+import { Injectable, Inject, ConflictException, Logger } from '@nestjs/common';
 import { USER_REPOSITORY } from '@domain/ports/user.repository.interface';
 import type { IUserRepository } from '@domain/ports/user.repository.interface';
 import { User } from '@domain/models/user.model';
+import { APPOINTMENT_REPOSITORY } from '@domain/ports/appointment.repository.interface';
+import type { IAppointmentRepository } from '@domain/ports/appointment.repository.interface';
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
+
   constructor(
     @Inject(USER_REPOSITORY)
     private readonly userRepository: IUserRepository,
+    @Inject(APPOINTMENT_REPOSITORY)
+    private readonly appointments: IAppointmentRepository,
   ) {}
 
   async createUser(data: Partial<User>): Promise<User> {
@@ -35,7 +41,22 @@ export class UserService {
     if (!user) {
       throw new Error('User not found');
     }
-    return this.userRepository.update(id, data);
+    const updated = await this.userRepository.update(id, data);
+    if (
+      updated.googleId &&
+      updated.integrationProvider === 'google' &&
+      updated.syncCalendar
+    ) {
+      try {
+        await this.appointments.scheduleAllForUser(id);
+      } catch (error) {
+        this.logger.warn(
+          `Could not schedule appointments after enabling Google Calendar for user ${id}`,
+          error,
+        );
+      }
+    }
+    return updated;
   }
 
   async updateUserProfile(id: string, data: Partial<User>): Promise<User> {
