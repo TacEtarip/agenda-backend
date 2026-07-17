@@ -16,6 +16,7 @@ import { ProductModule } from '@infrastructure/modules/product.module';
 import { ClientProductModule } from '@infrastructure/modules/client-product.module';
 import { MessagingModule } from '@infrastructure/messaging/messaging.module';
 import { PaymentModule } from '@infrastructure/payments/payment.module';
+import { GoogleIntegrationModule } from '@infrastructure/modules/google-integration.module';
 import { validateEnv } from './config/env.validation';
 
 @Module({
@@ -52,6 +53,7 @@ import { validateEnv } from './config/env.validation';
     ClientProductModule,
     MessagingModule, // Integra el proveedor de WhatsAppWeb
     PaymentModule, // Integra la pasarela de pagos local (Culqi/Niubiz/MercadoPago)
+    GoogleIntegrationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

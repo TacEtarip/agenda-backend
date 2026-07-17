@@ -9,6 +9,14 @@ const requiredEnvVars = [
   'JWT_SECRET',
 ] as const;
 
+const googleEnvVars = [
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET',
+  'GOOGLE_REDIRECT_URI',
+  'GOOGLE_FRONTEND_REDIRECT_URL',
+  'GOOGLE_TOKEN_ENCRYPTION_KEY',
+] as const;
+
 export function validateEnv(config: Env): Env {
   for (const key of requiredEnvVars) {
     if (!config[key]) {
@@ -19,6 +27,35 @@ export function validateEnv(config: Env): Env {
   const dbPort = Number(config.DB_PORT);
   if (!Number.isInteger(dbPort) || dbPort <= 0 || dbPort > 65535) {
     throw new Error('DB_PORT must be a valid TCP port');
+  }
+
+  const configuredGoogleVars = googleEnvVars.filter((key) => config[key]);
+  if (
+    configuredGoogleVars.length > 0 &&
+    configuredGoogleVars.length !== googleEnvVars.length
+  ) {
+    throw new Error(
+      `Google OAuth configuration must define all of: ${googleEnvVars.join(', ')}`,
+    );
+  }
+  if (configuredGoogleVars.length === googleEnvVars.length) {
+    const encryptionKey = Buffer.from(
+      config.GOOGLE_TOKEN_ENCRYPTION_KEY || '',
+      'base64',
+    );
+    if (encryptionKey.length !== 32) {
+      throw new Error(
+        'GOOGLE_TOKEN_ENCRYPTION_KEY must be a base64-encoded 32-byte key',
+      );
+    }
+    for (const key of ['GOOGLE_REDIRECT_URI', 'GOOGLE_FRONTEND_REDIRECT_URL']) {
+      try {
+        const url = new URL(config[key] || '');
+        if (!['http:', 'https:'].includes(url.protocol)) throw new Error();
+      } catch {
+        throw new Error(`${key} must be a valid HTTP(S) URL`);
+      }
+    }
   }
 
   return config;

@@ -12,6 +12,7 @@ import { MESSAGE_TEMPLATE_REPOSITORY } from '@domain/ports/message-template.repo
 import { PRODUCT_REPOSITORY } from '@domain/ports/product.repository.interface';
 import { CLIENT_PRODUCT_REPOSITORY } from '@domain/ports/client-product.repository.interface';
 import { PAYMENT_REPOSITORY } from '@domain/ports/payment.repository.interface';
+import { GOOGLE_INTEGRATION_REPOSITORY } from '@domain/ports/google-integration.repository.interface';
 
 // ORM Entities
 import { CompanyOrmEntity } from './entities/company.orm-entity';
@@ -25,6 +26,8 @@ import { ProductOrmEntity } from './entities/product.orm-entity';
 import { ClientProductOrmEntity } from './entities/client-product.orm-entity';
 import { StageOrmEntity } from './entities/stage.orm-entity';
 import { PaymentOrmEntity } from './entities/payment.orm-entity';
+import { GoogleIntegrationOrmEntity } from './entities/google-integration.orm-entity';
+import { GoogleOAuthStateOrmEntity } from './entities/google-oauth-state.orm-entity';
 
 // Repositories
 import { CompanyRepository } from './repositories/company.repository';
@@ -38,6 +41,7 @@ import { ProductRepository } from './repositories/product.repository';
 import { ClientProductRepository } from './repositories/client-product.repository';
 import { StageSeedService } from './stage-seed.service';
 import { PaymentRepository } from './repositories/payment.repository';
+import { GoogleIntegrationRepository } from './repositories/google-integration.repository';
 
 // Combine Repositories Providers to bind Interfaces -> Implementations
 const repositoryProviders = [
@@ -81,6 +85,10 @@ const repositoryProviders = [
     provide: PAYMENT_REPOSITORY,
     useClass: PaymentRepository,
   },
+  {
+    provide: GOOGLE_INTEGRATION_REPOSITORY,
+    useClass: GoogleIntegrationRepository,
+  },
 ];
 
 @Global()
@@ -98,6 +106,8 @@ const repositoryProviders = [
       ClientProductOrmEntity,
       StageOrmEntity,
       PaymentOrmEntity,
+      GoogleIntegrationOrmEntity,
+      GoogleOAuthStateOrmEntity,
     ]),
   ],
   providers: [...repositoryProviders, StageSeedService],

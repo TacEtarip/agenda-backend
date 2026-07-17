@@ -89,6 +89,17 @@ describe('Commercial flow (e2e)', () => {
       }),
     );
 
+    const googleStatusResponse = await request(server)
+      .get('/integrations/google/status')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    expect(googleStatusResponse.body).toEqual({
+      configured: false,
+      connected: false,
+      scopes: [],
+    });
+
     const clientResponse = await request(server)
       .post('/clients')
       .set('Authorization', `Bearer ${accessToken}`)

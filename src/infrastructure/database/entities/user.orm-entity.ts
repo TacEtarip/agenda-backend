@@ -33,11 +33,16 @@ export class UserOrmEntity {
   @Column({ name: 'password_hash', nullable: true })
   passwordHash!: string;
 
-  @Column({ name: 'google_id', unique: true, nullable: true })
-  googleId!: string;
+  @Column({ name: 'google_id', type: 'varchar', unique: true, nullable: true })
+  googleId!: string | null;
 
-  @Column({ name: 'microsoft_id', unique: true, nullable: true })
-  microsoftId!: string;
+  @Column({
+    name: 'microsoft_id',
+    type: 'varchar',
+    unique: true,
+    nullable: true,
+  })
+  microsoftId!: string | null;
 
   @Column({ name: 'first_name' })
   firstName!: string;

@@ -8,8 +8,8 @@ export class User {
   phone?: string;
   createdAt!: Date;
   passwordHash?: string;
-  googleId?: string;
-  microsoftId?: string;
+  googleId?: string | null;
+  microsoftId?: string | null;
 
   // Settings
   integrationProvider?: string;
