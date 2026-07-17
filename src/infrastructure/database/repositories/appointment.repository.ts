@@ -32,14 +32,17 @@ export class AppointmentRepository implements IAppointmentRepository {
   }
 
   async findById(id: string): Promise<Appointment | null> {
-    const ormEntity = await this.repository.findOne({ where: { id } });
+    const ormEntity = await this.repository.findOne({
+      where: { id },
+      relations: ['scheduleConflicts'],
+    });
     return ormEntity ? AppointmentMapper.toDomain(ormEntity) : null;
   }
 
   async findAllByCompanyId(companyId: string): Promise<Appointment[]> {
     const ormEntities = await this.repository.find({
       where: { company: { id: companyId } },
-      relations: ['company'],
+      relations: ['company', 'scheduleConflicts'],
     });
     return ormEntities.map((entity: AppointmentOrmEntity) =>
       AppointmentMapper.toDomain(entity),
@@ -49,11 +52,38 @@ export class AppointmentRepository implements IAppointmentRepository {
   async findAllByClientId(clientId: string): Promise<Appointment[]> {
     const ormEntities = await this.repository.find({
       where: { client: { id: clientId } },
-      relations: ['client'],
+      relations: ['client', 'scheduleConflicts'],
     });
     return ormEntities.map((entity: AppointmentOrmEntity) =>
       AppointmentMapper.toDomain(entity),
     );
+  }
+
+  async findOverlappingScheduled(
+    userId: string,
+    startTime: Date,
+    endTime: Date,
+    excludeAppointmentId?: string,
+  ): Promise<Appointment[]> {
+    const query = this.repository
+      .createQueryBuilder('appointment')
+      .where('appointment.user_id = :userId', { userId })
+      .andWhere('appointment.status = :status', {
+        status: AppointmentStatus.SCHEDULED,
+      })
+      .andWhere('appointment.deleted_at IS NULL')
+      .andWhere('appointment.start_time < :endTime', { endTime })
+      .andWhere('appointment.end_time > :startTime', { startTime })
+      .orderBy('appointment.start_time', 'ASC');
+
+    if (excludeAppointmentId) {
+      query.andWhere('appointment.id != :excludeAppointmentId', {
+        excludeAppointmentId,
+      });
+    }
+
+    const entities = await query.getMany();
+    return entities.map((entity) => AppointmentMapper.toDomain(entity));
   }
 
   async findUpcoming(from: Date, to: Date): Promise<Appointment[]> {

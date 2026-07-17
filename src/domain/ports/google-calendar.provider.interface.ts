@@ -26,6 +26,24 @@ export interface GoogleCalendarEventResult {
   credentials: GoogleCalendarCredentialsResult;
 }
 
+export interface GoogleCalendarBusyInterval {
+  eventId: string;
+  startTime: Date;
+  endTime: Date;
+}
+
+export interface GoogleCalendarBusyResult {
+  intervals: GoogleCalendarBusyInterval[];
+  credentials: GoogleCalendarCredentialsResult;
+}
+
+export interface GoogleCalendarAvailabilityInput {
+  startTime: Date;
+  endTime: Date;
+  timeZone: string;
+  excludeEventId?: string;
+}
+
 export interface GoogleCalendarEventChange {
   eventId: string;
   appointmentId?: string;
@@ -35,6 +53,7 @@ export interface GoogleCalendarEventChange {
   startTime?: Date;
   endTime?: Date;
   updatedAt?: Date;
+  isBusy?: boolean;
 }
 
 export interface GoogleCalendarChangesResult {
@@ -59,6 +78,11 @@ export interface GoogleCalendarWatchResult {
 }
 
 export interface IGoogleCalendarProvider {
+  listBusyIntervals(
+    credentials: GoogleCalendarCredentials,
+    calendarId: string,
+    input: GoogleCalendarAvailabilityInput,
+  ): Promise<GoogleCalendarBusyResult>;
   createEvent(
     credentials: GoogleCalendarCredentials,
     calendarId: string,

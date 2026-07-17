@@ -1,5 +1,6 @@
 import { Appointment } from '@domain/models/appointment.model';
 import { AppointmentOrmEntity } from '../entities/appointment.orm-entity';
+import { AppointmentScheduleConflict } from '@domain/models/appointment-schedule-conflict.model';
 
 export class AppointmentMapper {
   static toDomain(ormEntity: AppointmentOrmEntity): Appointment {
@@ -23,6 +24,21 @@ export class AppointmentMapper {
       calendarSyncNextAttemptAt:
         ormEntity.calendarSyncNextAttemptAt ?? undefined,
       calendarSyncedAt: ormEntity.calendarSyncedAt ?? undefined,
+      scheduleConflicts: ormEntity.scheduleConflicts
+        ?.filter((conflict) => !conflict.resolvedAt)
+        .map(
+          (conflict) =>
+            new AppointmentScheduleConflict({
+              id: conflict.id,
+              appointmentId: conflict.appointmentId,
+              userId: conflict.userId,
+              source: conflict.source,
+              conflictStartTime: conflict.conflictStartTime,
+              conflictEndTime: conflict.conflictEndTime,
+              detectedAt: conflict.detectedAt,
+              resolvedAt: conflict.resolvedAt,
+            }),
+        ),
       deletedAt: ormEntity.deletedAt ?? undefined,
     });
   }

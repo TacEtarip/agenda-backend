@@ -17,11 +17,16 @@ import { CurrentUser } from '@infrastructure/auth/decorators/current-user.decora
 import type { AuthenticatedUser } from '@infrastructure/auth/strategies/jwt.strategy';
 import { CreateAppointmentDto } from '../dtos/appointment/create-appointment.dto';
 import { UpdateAppointmentDto } from '../dtos/appointment/update-appointment.dto';
+import { CheckAppointmentAvailabilityDto } from '../dtos/appointment/check-appointment-availability.dto';
+import { AppointmentAvailabilityService } from '@application/services/appointment-availability.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('appointments')
 export class AppointmentController {
-  constructor(private readonly appointmentService: AppointmentService) {}
+  constructor(
+    private readonly appointmentService: AppointmentService,
+    private readonly appointmentAvailability: AppointmentAvailabilityService,
+  ) {}
 
   @Post()
   create(
@@ -42,6 +47,21 @@ export class AppointmentController {
     return this.appointmentService.getAppointmentsByCompany(
       user.companyId || '',
     );
+  }
+
+  @Post('availability')
+  @HttpCode(HttpStatus.OK)
+  checkAvailability(
+    @Body() dto: CheckAppointmentAvailabilityDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.appointmentAvailability.checkAvailability({
+      userId: user.userId,
+      companyId: user.companyId || '',
+      startTime: new Date(dto.startTime),
+      endTime: new Date(dto.endTime),
+      excludeAppointmentId: dto.excludeAppointmentId,
+    });
   }
 
   @Get('client/:clientId')

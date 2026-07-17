@@ -29,6 +29,8 @@ import {
   TOKEN_CIPHER,
   type ITokenCipher,
 } from '@domain/ports/token-cipher.interface';
+import { AppointmentAvailabilityService } from './appointment-availability.service';
+import { AppointmentScheduleConflictService } from './appointment-schedule-conflict.service';
 
 const LOCAL_POLL_INTERVAL_MS = 60_000;
 const CHANNEL_TTL_SECONDS = 7 * 24 * 60 * 60;
@@ -58,6 +60,8 @@ export class GoogleCalendarInboundSyncService implements OnModuleInit {
     private readonly calendar: IGoogleCalendarProvider,
     @Inject(TOKEN_CIPHER)
     private readonly cipher: ITokenCipher,
+    private readonly appointmentAvailability: AppointmentAvailabilityService,
+    private readonly scheduleConflicts: AppointmentScheduleConflictService,
     config: ConfigService,
   ) {
     this.webhookUrl = config
@@ -181,6 +185,10 @@ export class GoogleCalendarInboundSyncService implements OnModuleInit {
       }
       if (result.fullSync) {
         await this.reconcileMissingEvents(integration, seenEventIds);
+        await this.scheduleConflicts.resolveMissingGoogleEvents(
+          integration.userId,
+          seenEventIds,
+        );
       }
       await this.persistRefreshedTokens(integration, result.credentials);
       await this.integrations.updateCalendarSync(userId, {
@@ -211,7 +219,15 @@ export class GoogleCalendarInboundSyncService implements OnModuleInit {
       integration.calendarId || 'primary',
       event.eventId,
     );
-    if (!appointment || appointment.status === AppointmentStatus.COMPLETED) {
+    if (!appointment) {
+      await this.applyUnlinkedGoogleEvent(integration.userId, event);
+      return;
+    }
+    await this.scheduleConflicts.resolveGoogleEvent(
+      integration.userId,
+      event.eventId,
+    );
+    if (appointment.status === AppointmentStatus.COMPLETED) {
       return;
     }
     if (
@@ -231,6 +247,7 @@ export class GoogleCalendarInboundSyncService implements OnModuleInit {
         calendarSyncNextAttemptAt: null,
         calendarSyncedAt: event.updatedAt ?? new Date(),
       });
+      await this.scheduleConflicts.resolveAppointment(appointment.id);
       return;
     }
     if (
@@ -249,6 +266,26 @@ export class GoogleCalendarInboundSyncService implements OnModuleInit {
       event.endTime.getTime() <= Date.now() - EXPIRATION_DELAY_MS
         ? AppointmentStatus.EXPIRED
         : AppointmentStatus.SCHEDULED;
+    if (status === AppointmentStatus.SCHEDULED) {
+      const conflicts = await this.appointmentAvailability.findLocalConflicts(
+        appointment.userId,
+        event.startTime,
+        event.endTime,
+        appointment.id,
+      );
+      if (conflicts.length > 0) {
+        await this.appointments.update(appointment.id, {
+          calendarSyncStatus: CalendarSyncStatus.FAILED,
+          calendarSyncOperation: null,
+          calendarSyncError:
+            'El horario cambiado en Google se superpone con otra cita programada en Agenda.',
+          calendarSyncAttempts: 0,
+          calendarSyncNextAttemptAt: null,
+          calendarSyncedAt: event.updatedAt ?? new Date(),
+        });
+        return;
+      }
+    }
     await this.appointments.update(appointment.id, {
       title: event.title ?? appointment.title,
       description: event.description ?? '',
@@ -261,6 +298,40 @@ export class GoogleCalendarInboundSyncService implements OnModuleInit {
       calendarSyncAttempts: 0,
       calendarSyncNextAttemptAt: null,
       calendarSyncedAt: event.updatedAt ?? new Date(),
+    });
+    await this.scheduleConflicts.resolveAppointment(appointment.id);
+  }
+
+  private async applyUnlinkedGoogleEvent(
+    userId: string,
+    event: GoogleCalendarEventChange,
+  ): Promise<void> {
+    if (
+      event.status === 'cancelled' ||
+      event.isBusy === false ||
+      !event.startTime ||
+      !event.endTime ||
+      Number.isNaN(event.startTime.getTime()) ||
+      Number.isNaN(event.endTime.getTime()) ||
+      event.endTime.getTime() <= event.startTime.getTime()
+    ) {
+      await this.scheduleConflicts.resolveGoogleEvent(userId, event.eventId);
+      return;
+    }
+
+    const appointments = await this.appointmentAvailability.findLocalConflicts(
+      userId,
+      event.startTime,
+      event.endTime,
+    );
+    await this.scheduleConflicts.recordGoogleEvent({
+      userId,
+      externalEventId: event.eventId,
+      startTime: event.startTime,
+      endTime: event.endTime,
+      appointmentIds: appointments.flatMap((conflict) =>
+        conflict.appointmentId ? [conflict.appointmentId] : [],
+      ),
     });
   }
 

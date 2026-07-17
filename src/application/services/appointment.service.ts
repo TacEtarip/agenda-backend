@@ -20,6 +20,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { GoogleCalendarSyncService } from './google-calendar-sync.service';
+import { AppointmentAvailabilityService } from './appointment-availability.service';
+import { AppointmentScheduleConflictService } from './appointment-schedule-conflict.service';
 
 @Injectable()
 export class AppointmentService {
@@ -31,6 +33,8 @@ export class AppointmentService {
     @Inject(USER_REPOSITORY)
     private readonly userRepository: IUserRepository,
     private readonly googleCalendarSync: GoogleCalendarSyncService,
+    private readonly appointmentAvailability: AppointmentAvailabilityService,
+    private readonly scheduleConflicts: AppointmentScheduleConflictService,
   ) {}
 
   private async getClientAssertExists(
@@ -55,10 +59,28 @@ export class AppointmentService {
       throw new NotFoundException(`User ${data.userId} not found`);
     }
 
-    const created = await this.appointmentRepository.create({
-      ...data,
-      ...this.calendarSyncFields(user, data.status),
-    });
+    if (
+      (data.status ?? AppointmentStatus.SCHEDULED) ===
+      AppointmentStatus.SCHEDULED
+    ) {
+      await this.appointmentAvailability.assertAvailable({
+        userId: data.userId,
+        companyId: data.companyId,
+        startTime: data.startTime!,
+        endTime: data.endTime!,
+      });
+    }
+
+    let created: Appointment;
+    try {
+      created = await this.appointmentRepository.create({
+        ...data,
+        ...this.calendarSyncFields(user, data.status),
+      });
+    } catch (error) {
+      this.rethrowScheduleConflict(error);
+      throw error;
+    }
     if (created.calendarSyncStatus === CalendarSyncStatus.PENDING) {
       this.googleCalendarSync.trigger(created.id);
     }
@@ -159,10 +181,35 @@ export class AppointmentService {
       );
     }
 
-    return this.updateWithCalendarSync(appointment, user, {
+    const nextStatus = normalizedData.status ?? appointment.status;
+    if (
+      nextStatus === AppointmentStatus.SCHEDULED &&
+      (data.startTime !== undefined ||
+        data.endTime !== undefined ||
+        reschedulesInactiveAppointment)
+    ) {
+      await this.appointmentAvailability.assertAvailable({
+        userId: appointment.userId,
+        companyId,
+        startTime: normalizedData.startTime ?? appointment.startTime,
+        endTime: normalizedData.endTime ?? appointment.endTime,
+        excludeAppointmentId: appointment.id,
+      });
+    }
+
+    const updated = await this.updateWithCalendarSync(appointment, user, {
       ...normalizedData,
       companyId,
     });
+    if (
+      normalizedData.startTime !== undefined ||
+      normalizedData.endTime !== undefined ||
+      (normalizedData.status !== undefined &&
+        normalizedData.status !== appointment.status)
+    ) {
+      await this.scheduleConflicts.resolveAppointment(appointment.id);
+    }
+    return updated;
   }
 
   async deleteAppointment(id: string, companyId: string): Promise<void> {
@@ -177,6 +224,7 @@ export class AppointmentService {
         calendarSyncNextAttemptAt: null,
       });
       await this.appointmentRepository.softDelete(id);
+      await this.scheduleConflicts.resolveAppointment(id);
       this.googleCalendarSync.trigger(id);
       return;
     }
@@ -203,10 +251,16 @@ export class AppointmentService {
     user: User | null,
     data: Partial<Appointment>,
   ): Promise<Appointment> {
-    const updated = await this.appointmentRepository.update(appointment.id, {
-      ...data,
-      ...this.calendarSyncFields(user, data.status ?? appointment.status),
-    });
+    let updated: Appointment;
+    try {
+      updated = await this.appointmentRepository.update(appointment.id, {
+        ...data,
+        ...this.calendarSyncFields(user, data.status ?? appointment.status),
+      });
+    } catch (error) {
+      this.rethrowScheduleConflict(error);
+      throw error;
+    }
     if (updated.calendarSyncStatus === CalendarSyncStatus.PENDING) {
       this.googleCalendarSync.trigger(updated.id);
     }
@@ -271,6 +325,23 @@ export class AppointmentService {
       throw new BadRequestException(
         'Appointment end time must be after its start time',
       );
+    }
+  }
+
+  private rethrowScheduleConflict(error: unknown): void {
+    if (!error || typeof error !== 'object') return;
+    const candidate = error as {
+      code?: string;
+      driverError?: { code?: string };
+    };
+    if (candidate.code === '23P01' || candidate.driverError?.code === '23P01') {
+      throw new ConflictException({
+        code: 'APPOINTMENT_TIME_CONFLICT',
+        message: 'The selected appointment time is already occupied',
+        available: false,
+        externalCalendarChecked: false,
+        conflicts: [],
+      });
     }
   }
 }

@@ -22,6 +22,7 @@ import type { AuthenticatedUser } from '@infrastructure/auth/strategies/jwt.stra
 import { APPOINTMENT_REPOSITORY } from '@domain/ports/appointment.repository.interface';
 import type { IAppointmentRepository } from '@domain/ports/appointment.repository.interface';
 import { GoogleCalendarInboundSyncService } from './google-calendar-inbound-sync.service';
+import { AppointmentScheduleConflictService } from './appointment-schedule-conflict.service';
 
 const STATE_TTL_MS = 10 * 60 * 1000;
 const GOOGLE_CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.events';
@@ -50,6 +51,7 @@ export class GoogleIntegrationService {
     @Inject(APPOINTMENT_REPOSITORY)
     private readonly appointments: IAppointmentRepository,
     private readonly inboundSync: GoogleCalendarInboundSyncService,
+    private readonly scheduleConflicts: AppointmentScheduleConflictService,
   ) {}
 
   async getStatus(user: AuthenticatedUser): Promise<GoogleIntegrationStatus> {
@@ -185,6 +187,7 @@ export class GoogleIntegrationService {
         );
       }
       await this.integrations.deleteByUserId(user.userId);
+      await this.scheduleConflicts.resolveAllGoogleForUser(user.userId);
       await this.users.update(user.userId, {
         googleId: null,
         integrationProvider: 'none',

@@ -81,6 +81,9 @@ describe('GoogleIntegrationService', () => {
       triggerSetup: jest.fn(),
       stopForUser: jest.fn().mockResolvedValue(undefined),
     };
+    const scheduleConflicts = {
+      resolveAllGoogleForUser: jest.fn().mockResolvedValue(undefined),
+    };
     const service = new GoogleIntegrationService(
       integrations,
       google,
@@ -88,6 +91,7 @@ describe('GoogleIntegrationService', () => {
       users,
       appointments,
       inboundSync as never,
+      scheduleConflicts as never,
     );
     return {
       service,
@@ -97,6 +101,7 @@ describe('GoogleIntegrationService', () => {
       users,
       appointments,
       inboundSync,
+      scheduleConflicts,
     };
   };
 
@@ -217,8 +222,15 @@ describe('GoogleIntegrationService', () => {
   });
 
   it('revokes the refresh token and removes the local connection', async () => {
-    const { service, integrations, google, cipher, users, inboundSync } =
-      setup();
+    const {
+      service,
+      integrations,
+      google,
+      cipher,
+      users,
+      inboundSync,
+      scheduleConflicts,
+    } = setup();
     integrations.findByUserId.mockResolvedValueOnce(connection);
 
     const result = await service.disconnect(user);
@@ -230,6 +242,9 @@ describe('GoogleIntegrationService', () => {
     );
     expect(google.revokeToken).toHaveBeenCalledWith('refresh-token');
     expect(integrations.deleteByUserId).toHaveBeenCalledWith(user.userId);
+    expect(scheduleConflicts.resolveAllGoogleForUser).toHaveBeenCalledWith(
+      user.userId,
+    );
     expect(users.update).toHaveBeenCalledWith(user.userId, {
       googleId: null,
       integrationProvider: 'none',

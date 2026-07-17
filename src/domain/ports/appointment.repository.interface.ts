@@ -7,6 +7,12 @@ export interface IAppointmentRepository {
   findById(id: string): Promise<Appointment | null>;
   findAllByCompanyId(companyId: string): Promise<Appointment[]>;
   findAllByClientId(clientId: string): Promise<Appointment[]>;
+  findOverlappingScheduled(
+    userId: string,
+    startTime: Date,
+    endTime: Date,
+    excludeAppointmentId?: string,
+  ): Promise<Appointment[]>;
   findUpcoming(from: Date, to: Date): Promise<Appointment[]>;
   findByIdForCalendarSync(id: string): Promise<Appointment | null>;
   findByExternalEventId(

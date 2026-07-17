@@ -3,6 +3,7 @@ import {
   CalendarSyncOperation,
   CalendarSyncStatus,
 } from '../enums/calendar-sync-status.enum';
+import { AppointmentScheduleConflict } from './appointment-schedule-conflict.model';
 
 export class Appointment {
   id!: string;
@@ -23,6 +24,7 @@ export class Appointment {
   calendarSyncAttempts!: number;
   calendarSyncNextAttemptAt?: Date | null;
   calendarSyncedAt?: Date | null;
+  scheduleConflicts?: AppointmentScheduleConflict[];
   deletedAt?: Date;
   constructor(partial: Partial<Appointment>) {
     Object.assign(this, partial);

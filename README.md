@@ -78,6 +78,23 @@ Google has announced that requests above that threshold may incur charges later
 in 2026. Verify the current limits before deployment:
 [Google Calendar API usage limits](https://developers.google.com/workspace/calendar/api/guides/quota).
 
+Before creating or rescheduling an appointment, the API checks overlapping
+scheduled appointments for the same user and, when Google synchronization is
+enabled, opaque Google Calendar events. The authenticated endpoint
+`POST /appointments/availability` provides the same preflight check for the UI.
+Event titles and descriptions are never included in the availability response.
+PostgreSQL also enforces non-overlapping scheduled ranges to protect concurrent
+requests. Apply all migrations before starting the API.
+
+The inbound synchronizer also detects post-booking conflicts caused by unlinked
+busy Google events. Active conflicts are stored separately from calendar sync
+status and returned with the appointment as `scheduleConflicts`, allowing the UI
+to warn without treating a healthy Google connection as failed. Moving or
+deleting the Google event, rescheduling or closing the appointment, a full sync
+that no longer contains the event, and disconnecting Google all resolve the
+alert. Only the opaque Google event ID and occupied interval are persisted; no
+event title, description, or attendee data is stored.
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.

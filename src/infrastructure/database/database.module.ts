@@ -13,6 +13,7 @@ import { PRODUCT_REPOSITORY } from '@domain/ports/product.repository.interface';
 import { CLIENT_PRODUCT_REPOSITORY } from '@domain/ports/client-product.repository.interface';
 import { PAYMENT_REPOSITORY } from '@domain/ports/payment.repository.interface';
 import { GOOGLE_INTEGRATION_REPOSITORY } from '@domain/ports/google-integration.repository.interface';
+import { APPOINTMENT_SCHEDULE_CONFLICT_REPOSITORY } from '@domain/ports/appointment-schedule-conflict.repository.interface';
 
 // ORM Entities
 import { CompanyOrmEntity } from './entities/company.orm-entity';
@@ -28,6 +29,7 @@ import { StageOrmEntity } from './entities/stage.orm-entity';
 import { PaymentOrmEntity } from './entities/payment.orm-entity';
 import { GoogleIntegrationOrmEntity } from './entities/google-integration.orm-entity';
 import { GoogleOAuthStateOrmEntity } from './entities/google-oauth-state.orm-entity';
+import { AppointmentScheduleConflictOrmEntity } from './entities/appointment-schedule-conflict.orm-entity';
 
 // Repositories
 import { CompanyRepository } from './repositories/company.repository';
@@ -42,6 +44,7 @@ import { ClientProductRepository } from './repositories/client-product.repositor
 import { StageSeedService } from './stage-seed.service';
 import { PaymentRepository } from './repositories/payment.repository';
 import { GoogleIntegrationRepository } from './repositories/google-integration.repository';
+import { AppointmentScheduleConflictRepository } from './repositories/appointment-schedule-conflict.repository';
 
 // Combine Repositories Providers to bind Interfaces -> Implementations
 const repositoryProviders = [
@@ -89,6 +92,10 @@ const repositoryProviders = [
     provide: GOOGLE_INTEGRATION_REPOSITORY,
     useClass: GoogleIntegrationRepository,
   },
+  {
+    provide: APPOINTMENT_SCHEDULE_CONFLICT_REPOSITORY,
+    useClass: AppointmentScheduleConflictRepository,
+  },
 ];
 
 @Global()
@@ -108,6 +115,7 @@ const repositoryProviders = [
       PaymentOrmEntity,
       GoogleIntegrationOrmEntity,
       GoogleOAuthStateOrmEntity,
+      AppointmentScheduleConflictOrmEntity,
     ]),
   ],
   providers: [...repositoryProviders, StageSeedService],

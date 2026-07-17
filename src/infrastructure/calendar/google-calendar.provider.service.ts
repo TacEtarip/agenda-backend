@@ -4,6 +4,8 @@ import { calendar_v3, google } from 'googleapis';
 import {
   GoogleCalendarCredentials,
   GoogleCalendarCredentialsResult,
+  GoogleCalendarAvailabilityInput,
+  GoogleCalendarBusyResult,
   GoogleCalendarChangesResult,
   GoogleCalendarEventInput,
   GoogleCalendarEventResult,
@@ -22,6 +24,77 @@ export class GoogleCalendarProviderService implements IGoogleCalendarProvider {
     this.clientId = config.get<string>('GOOGLE_CLIENT_ID', '');
     this.clientSecret = config.get<string>('GOOGLE_CLIENT_SECRET', '');
     this.redirectUri = config.get<string>('GOOGLE_REDIRECT_URI', '');
+  }
+
+  async listBusyIntervals(
+    credentials: GoogleCalendarCredentials,
+    calendarId: string,
+    input: GoogleCalendarAvailabilityInput,
+  ): Promise<GoogleCalendarBusyResult> {
+    const client = this.createClient(credentials);
+    const api = google.calendar({ version: 'v3', auth: client });
+    const intervals: GoogleCalendarBusyResult['intervals'] = [];
+    let pageToken: string | undefined;
+
+    do {
+      const response = await api.events.list({
+        calendarId,
+        timeMin: input.startTime.toISOString(),
+        timeMax: input.endTime.toISOString(),
+        timeZone: input.timeZone,
+        singleEvents: true,
+        showDeleted: false,
+        maxResults: 2500,
+        pageToken,
+      });
+
+      for (const event of response.data.items ?? []) {
+        if (
+          !event.id ||
+          event.id === input.excludeEventId ||
+          event.status === 'cancelled' ||
+          event.transparency === 'transparent' ||
+          event.attendees?.some(
+            (attendee) =>
+              attendee.self && attendee.responseStatus === 'declined',
+          )
+        ) {
+          continue;
+        }
+
+        const allDay = Boolean(event.start?.date && event.end?.date);
+        const startTime = event.start?.dateTime
+          ? new Date(event.start.dateTime)
+          : allDay
+            ? input.startTime
+            : undefined;
+        const endTime = event.end?.dateTime
+          ? new Date(event.end.dateTime)
+          : allDay
+            ? input.endTime
+            : undefined;
+
+        if (
+          !startTime ||
+          !endTime ||
+          Number.isNaN(startTime.getTime()) ||
+          Number.isNaN(endTime.getTime()) ||
+          startTime >= input.endTime ||
+          endTime <= input.startTime
+        ) {
+          continue;
+        }
+
+        intervals.push({ eventId: event.id, startTime, endTime });
+      }
+
+      pageToken = response.data.nextPageToken ?? undefined;
+    } while (pageToken);
+
+    return {
+      intervals,
+      credentials: this.currentCredentials(client),
+    };
   }
 
   async createEvent(
@@ -127,6 +200,12 @@ export class GoogleCalendarProviderService implements IGoogleCalendarProvider {
               ? new Date(event.end.dateTime)
               : undefined,
             updatedAt: event.updated ? new Date(event.updated) : undefined,
+            isBusy:
+              event.transparency !== 'transparent' &&
+              !event.attendees?.some(
+                (attendee) =>
+                  attendee.self && attendee.responseStatus === 'declined',
+              ),
           });
         }
         pageToken = response.data.nextPageToken ?? undefined;

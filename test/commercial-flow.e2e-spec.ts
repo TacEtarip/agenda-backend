@@ -125,6 +125,142 @@ describe('Commercial flow (e2e)', () => {
       }),
     );
 
+    const appointmentStart = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+    appointmentStart.setUTCSeconds(0, 0);
+    const appointmentEnd = new Date(
+      appointmentStart.getTime() + 60 * 60 * 1000,
+    );
+    const appointmentResponse = await request(server)
+      .post('/appointments')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        clientId: client.id,
+        title: 'Cita E2E',
+        startTime: appointmentStart.toISOString(),
+        endTime: appointmentEnd.toISOString(),
+      })
+      .expect(201);
+
+    expect(appointmentResponse.body).toEqual(
+      expect.objectContaining({
+        id: expect.any(String),
+        clientId: client.id,
+      }),
+    );
+
+    const conflictingStart = new Date(
+      appointmentStart.getTime() + 30 * 60 * 1000,
+    );
+    const conflictingEnd = new Date(appointmentEnd.getTime() + 30 * 60 * 1000);
+    const availabilityResponse = await request(server)
+      .post('/appointments/availability')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        startTime: conflictingStart.toISOString(),
+        endTime: conflictingEnd.toISOString(),
+      })
+      .expect(200);
+
+    expect(availabilityResponse.body).toEqual(
+      expect.objectContaining({
+        available: false,
+        externalCalendarChecked: false,
+        conflicts: [
+          expect.objectContaining({
+            source: 'agenda',
+            appointmentId: appointmentResponse.body.id,
+          }),
+        ],
+      }),
+    );
+
+    const adjacentAvailabilityResponse = await request(server)
+      .post('/appointments/availability')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        startTime: appointmentEnd.toISOString(),
+        endTime: new Date(
+          appointmentEnd.getTime() + 60 * 60 * 1000,
+        ).toISOString(),
+      })
+      .expect(200);
+
+    expect(adjacentAvailabilityResponse.body).toEqual({
+      available: true,
+      externalCalendarChecked: false,
+      conflicts: [],
+    });
+
+    const conflictCreationResponse = await request(server)
+      .post('/appointments')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        clientId: client.id,
+        title: 'Cita E2E superpuesta',
+        startTime: conflictingStart.toISOString(),
+        endTime: conflictingEnd.toISOString(),
+      })
+      .expect(409);
+
+    expect(conflictCreationResponse.body).toEqual(
+      expect.objectContaining({ code: 'APPOINTMENT_TIME_CONFLICT' }),
+    );
+
+    await dataSource.query(
+      `INSERT INTO appointment_schedule_conflicts
+        (appointment_id, user_id, source, external_event_id, conflict_start_time, conflict_end_time)
+       VALUES ($1, $2, 'google', $3, $4, $5)`,
+      [
+        appointmentResponse.body.id,
+        profileResponse.body.userId,
+        'personal-google-event-e2e',
+        appointmentStart,
+        appointmentEnd,
+      ],
+    );
+
+    const appointmentsWithConflictResponse = await request(server)
+      .get(`/appointments/client/${client.id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    expect(appointmentsWithConflictResponse.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: appointmentResponse.body.id,
+          scheduleConflicts: [
+            expect.objectContaining({
+              source: 'google',
+              conflictStartTime: appointmentStart.toISOString(),
+              conflictEndTime: appointmentEnd.toISOString(),
+            }),
+          ],
+        }),
+      ]),
+    );
+
+    const rescheduledStart = new Date(
+      appointmentEnd.getTime() + 60 * 60 * 1000,
+    );
+    const rescheduledEnd = new Date(
+      rescheduledStart.getTime() + 60 * 60 * 1000,
+    );
+    await request(server)
+      .put(`/appointments/${appointmentResponse.body.id}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        startTime: rescheduledStart.toISOString(),
+        endTime: rescheduledEnd.toISOString(),
+      })
+      .expect(200);
+
+    const activeConflicts = await dataSource.query<Array<{ id: string }>>(
+      `SELECT id FROM appointment_schedule_conflicts
+       WHERE appointment_id = $1 AND resolved_at IS NULL`,
+      [appointmentResponse.body.id],
+    );
+    expect(activeConflicts).toHaveLength(0);
+
     const productResponse = await request(server)
       .post('/products')
       .set('Authorization', `Bearer ${accessToken}`)

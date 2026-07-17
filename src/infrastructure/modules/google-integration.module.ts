@@ -9,6 +9,8 @@ import { GoogleCalendarProviderService } from '../calendar/google-calendar.provi
 import { DatabaseModule } from '../database/database.module';
 import { GoogleIntegrationController } from '../http/controllers/google-integration.controller';
 import { GoogleCalendarInboundSyncService } from '@application/services/google-calendar-inbound-sync.service';
+import { AppointmentAvailabilityService } from '@application/services/appointment-availability.service';
+import { AppointmentScheduleConflictService } from '@application/services/appointment-schedule-conflict.service';
 
 @Module({
   imports: [DatabaseModule],
@@ -16,6 +18,8 @@ import { GoogleCalendarInboundSyncService } from '@application/services/google-c
   providers: [
     GoogleIntegrationService,
     GoogleCalendarInboundSyncService,
+    AppointmentAvailabilityService,
+    AppointmentScheduleConflictService,
     GoogleOAuthProviderService,
     GoogleCalendarProviderService,
     AesTokenCipherService,
@@ -35,6 +39,8 @@ import { GoogleCalendarInboundSyncService } from '@application/services/google-c
   exports: [
     GoogleIntegrationService,
     GoogleCalendarInboundSyncService,
+    AppointmentAvailabilityService,
+    AppointmentScheduleConflictService,
     GOOGLE_CALENDAR_PROVIDER,
     TOKEN_CIPHER,
   ],

@@ -5,6 +5,7 @@ import {
   Index,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { AppointmentStatus } from '@domain/enums/appointment-status.enum';
@@ -15,6 +16,7 @@ import {
 import { ClientOrmEntity } from './client.orm-entity';
 import { UserOrmEntity } from './user.orm-entity';
 import { CompanyOrmEntity } from './company.orm-entity';
+import { AppointmentScheduleConflictOrmEntity } from './appointment-schedule-conflict.orm-entity';
 
 @Entity('appointments')
 @Index('IDX_appointments_calendar_sync_due', [
@@ -125,4 +127,10 @@ export class AppointmentOrmEntity {
   })
   @JoinColumn({ name: 'user_id' })
   user!: UserOrmEntity;
+
+  @OneToMany(
+    () => AppointmentScheduleConflictOrmEntity,
+    (conflict) => conflict.appointment,
+  )
+  scheduleConflicts!: AppointmentScheduleConflictOrmEntity[];
 }

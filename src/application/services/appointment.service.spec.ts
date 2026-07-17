@@ -47,18 +47,28 @@ describe('AppointmentService status rules', () => {
       }),
     };
     const googleCalendarSync = { trigger: jest.fn() };
+    const appointmentAvailability = {
+      assertAvailable: jest.fn().mockResolvedValue(undefined),
+    };
+    const scheduleConflicts = {
+      resolveAppointment: jest.fn().mockResolvedValue(undefined),
+    };
 
     const service = new AppointmentService(
       appointmentRepository,
       clientRepository as never,
       userRepository as never,
       googleCalendarSync as never,
+      appointmentAvailability as never,
+      scheduleConflicts as never,
     );
     return {
       service,
       appointmentRepository,
       userRepository,
       googleCalendarSync,
+      appointmentAvailability,
+      scheduleConflicts,
       clientRepository,
     };
   };
@@ -79,6 +89,30 @@ describe('AppointmentService status rules', () => {
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(appointmentRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('checks availability before creating a scheduled appointment', async () => {
+    const { service, appointmentAvailability } = createService(
+      new Appointment({ companyId: 'company-1' }),
+    );
+
+    const startTime = new Date('2026-07-18T16:00:00.000Z');
+    const endTime = new Date('2026-07-18T17:00:00.000Z');
+    await service.createAppointment({
+      clientId: 'client-1',
+      userId: 'user-1',
+      companyId: 'company-1',
+      title: 'Consulta',
+      startTime,
+      endTime,
+    });
+
+    expect(appointmentAvailability.assertAvailable).toHaveBeenCalledWith({
+      userId: 'user-1',
+      companyId: 'company-1',
+      startTime,
+      endTime,
+    });
   });
 
   it('rejects updating an appointment to a past time', async () => {
@@ -259,5 +293,34 @@ describe('AppointmentService status rules', () => {
       }),
     );
     expect(googleCalendarSync.trigger).toHaveBeenCalledWith('appointment-1');
+  });
+
+  it('excludes the current appointment when checking a reschedule', async () => {
+    const { service, appointmentAvailability } = createService(
+      new Appointment({
+        id: 'appointment-1',
+        userId: 'user-1',
+        companyId: 'company-1',
+        status: AppointmentStatus.SCHEDULED,
+        startTime: new Date('2026-07-18T15:00:00.000Z'),
+        endTime: new Date('2026-07-18T16:00:00.000Z'),
+      }),
+    );
+    const startTime = new Date('2026-07-19T15:00:00.000Z');
+    const endTime = new Date('2026-07-19T16:00:00.000Z');
+
+    await service.updateAppointment(
+      'appointment-1',
+      { startTime, endTime },
+      'company-1',
+    );
+
+    expect(appointmentAvailability.assertAvailable).toHaveBeenCalledWith({
+      userId: 'user-1',
+      companyId: 'company-1',
+      startTime,
+      endTime,
+      excludeAppointmentId: 'appointment-1',
+    });
   });
 });

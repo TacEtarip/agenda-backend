@@ -77,14 +77,32 @@ describe('GoogleCalendarInboundSyncService', () => {
     const config = {
       get: jest.fn().mockReturnValue(''),
     } as unknown as ConfigService;
+    const appointmentAvailability = {
+      findLocalConflicts: jest.fn().mockResolvedValue([]),
+    };
+    const scheduleConflicts = {
+      recordGoogleEvent: jest.fn().mockResolvedValue(undefined),
+      resolveGoogleEvent: jest.fn().mockResolvedValue(undefined),
+      resolveAppointment: jest.fn().mockResolvedValue(undefined),
+      resolveMissingGoogleEvents: jest.fn().mockResolvedValue(undefined),
+    };
     const service = new GoogleCalendarInboundSyncService(
       appointments,
       integrations,
       calendar,
       cipher,
+      appointmentAvailability as never,
+      scheduleConflicts as never,
       config,
     );
-    return { service, appointments, integrations, calendar };
+    return {
+      service,
+      appointments,
+      integrations,
+      calendar,
+      appointmentAvailability,
+      scheduleConflicts,
+    };
   };
 
   it('applies a Google event update without scheduling an outbound write', async () => {
@@ -134,6 +152,34 @@ describe('GoogleCalendarInboundSyncService', () => {
     );
   });
 
+  it('keeps the local time and marks a conflict when Google overlaps another appointment', async () => {
+    const { service, appointments, appointmentAvailability } = setup();
+    appointmentAvailability.findLocalConflicts.mockResolvedValue([
+      {
+        source: 'agenda',
+        appointmentId: 'appointment-2',
+        startTime: new Date('2026-07-21T15:30:00.000Z'),
+        endTime: new Date('2026-07-21T16:30:00.000Z'),
+      },
+    ]);
+
+    await service.pullChanges(integration.userId);
+
+    expect(appointments.update).toHaveBeenCalledWith(
+      appointment.id,
+      expect.objectContaining({
+        calendarSyncStatus: CalendarSyncStatus.FAILED,
+        calendarSyncError: expect.stringContaining('se superpone'),
+      }),
+    );
+    expect(appointments.update).not.toHaveBeenCalledWith(
+      appointment.id,
+      expect.objectContaining({
+        startTime: new Date('2026-07-21T15:00:00.000Z'),
+      }),
+    );
+  });
+
   it('ignores notifications with an invalid channel token', async () => {
     const { service, calendar } = setup();
 
@@ -160,5 +206,83 @@ describe('GoogleCalendarInboundSyncService', () => {
       }),
     ).resolves.toBe(true);
     expect(calendar.listEventChanges).toHaveBeenCalled();
+  });
+
+  it('records a conflict when an unlinked busy Google event overlaps an appointment', async () => {
+    const {
+      service,
+      appointments,
+      calendar,
+      appointmentAvailability,
+      scheduleConflicts,
+    } = setup();
+    appointments.findByExternalEventId.mockResolvedValue(null);
+    appointmentAvailability.findLocalConflicts.mockResolvedValue([
+      {
+        source: 'agenda',
+        appointmentId: appointment.id,
+        startTime: appointment.startTime,
+        endTime: appointment.endTime,
+      },
+    ]);
+    calendar.listEventChanges.mockResolvedValue({
+      events: [
+        {
+          eventId: 'personal-event-1',
+          status: 'confirmed',
+          isBusy: true,
+          startTime: appointment.startTime,
+          endTime: appointment.endTime,
+        },
+      ],
+      nextSyncToken: 'sync-token-2',
+      fullSync: false,
+      credentials: { accessToken: 'new-access-token' },
+    });
+
+    await service.pullChanges(integration.userId);
+
+    expect(scheduleConflicts.recordGoogleEvent).toHaveBeenCalledWith({
+      userId: integration.userId,
+      externalEventId: 'personal-event-1',
+      startTime: appointment.startTime,
+      endTime: appointment.endTime,
+      appointmentIds: [appointment.id],
+    });
+  });
+
+  it('resolves a personal Google conflict when the event is deleted', async () => {
+    const { service, appointments, calendar, scheduleConflicts } = setup();
+    appointments.findByExternalEventId.mockResolvedValue(null);
+    calendar.listEventChanges.mockResolvedValue({
+      events: [{ eventId: 'personal-event-1', status: 'cancelled' }],
+      nextSyncToken: 'sync-token-2',
+      fullSync: false,
+      credentials: { accessToken: 'new-access-token' },
+    });
+
+    await service.pullChanges(integration.userId);
+
+    expect(scheduleConflicts.resolveGoogleEvent).toHaveBeenCalledWith(
+      integration.userId,
+      'personal-event-1',
+    );
+  });
+
+  it('resolves conflicts for events absent from a full synchronization', async () => {
+    const { service, calendar, scheduleConflicts } = setup();
+    calendar.listEventChanges.mockResolvedValue({
+      events: [],
+      nextSyncToken: 'sync-token-2',
+      fullSync: true,
+      credentials: { accessToken: 'new-access-token' },
+    });
+
+    await service.pullChanges(integration.userId);
+
+    expect(scheduleConflicts.resolveMissingGoogleEvents).toHaveBeenCalledWith(
+      integration.userId,
+      new Set<string>(),
+    );
   });
 });
