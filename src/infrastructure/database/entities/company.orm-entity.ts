@@ -22,6 +22,23 @@ export class CompanyOrmEntity {
   @Column()
   name!: string;
 
+  @Column({ name: 'yape_enabled', default: false })
+  yapeEnabled!: boolean;
+
+  @Column({ name: 'yape_phone', type: 'varchar', length: 9, nullable: true })
+  yapePhone!: string | null;
+
+  @Column({
+    name: 'yape_account_name',
+    type: 'varchar',
+    length: 120,
+    nullable: true,
+  })
+  yapeAccountName!: string | null;
+
+  @Column({ name: 'yape_qr_image_data_url', type: 'text', nullable: true })
+  yapeQrImageDataUrl!: string | null;
+
   @CreateDateColumn()
   createdAt!: Date;
 

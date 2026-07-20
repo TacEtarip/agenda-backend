@@ -127,6 +127,26 @@ export class PaymentRepository implements IPaymentRepository {
     return PaymentMapper.toDomain(updated);
   }
 
+  async transitionStatus(
+    id: string,
+    companyId: string,
+    fromStatus: PaymentStatus,
+    toStatus: PaymentStatus,
+    payment: Partial<Payment>,
+  ): Promise<Payment | null> {
+    const result = await this.repository
+      .createQueryBuilder()
+      .update(PaymentOrmEntity)
+      .set(PaymentMapper.toOrmEntity({ ...payment, status: toStatus }))
+      .where('id = :id', { id })
+      .andWhere('company_id = :companyId', { companyId })
+      .andWhere('status = :fromStatus', { fromStatus })
+      .execute();
+    if (result.affected !== 1) return null;
+    const updated = await this.repository.findOne({ where: { id, companyId } });
+    return updated ? PaymentMapper.toDomain(updated) : null;
+  }
+
   async cancelPendingForSource(
     sourceType: PaymentSourceType,
     sourceId: string,

@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Post,
   Query,
+  Patch,
   UseGuards,
 } from '@nestjs/common';
 import { PaymentService } from '@application/services/payment.service';
@@ -19,10 +20,57 @@ import { CreatePaymentLinkDto } from '../dtos/payment/create-payment-link.dto';
 import { RegisterManualPaymentDto } from '../dtos/payment/register-manual-payment.dto';
 import { ListPaymentsQueryDto } from '../dtos/payment/list-payments-query.dto';
 import { PaymentWebhookDto } from '../dtos/payment/payment-webhook.dto';
+import { UpdateYapeSettingsDto } from '../dtos/payment/update-yape-settings.dto';
+import { CreateYapePaymentRequestDto } from '../dtos/payment/create-yape-payment-request.dto';
+import { ConfirmYapePaymentDto } from '../dtos/payment/confirm-yape-payment.dto';
 
 @Controller('payments')
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
+
+  @UseGuards(JwtAuthGuard)
+  @Get('configuration/yape')
+  getYapeConfiguration(@CurrentUser() user: AuthenticatedUser) {
+    return this.paymentService.getYapeConfiguration(user.companyId || '');
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('configuration/yape')
+  updateYapeConfiguration(
+    @Body() dto: UpdateYapeSettingsDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.paymentService.updateYapeConfiguration(user.companyId || '', {
+      enabled: dto.enabled,
+      phone: dto.phone,
+      accountName: dto.accountName,
+      qrImageDataUrl: dto.qrImageDataUrl ?? undefined,
+    });
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('yape-requests')
+  createYapeRequest(
+    @Body() dto: CreateYapePaymentRequestDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.paymentService.createYapeRequest(dto, user.companyId || '');
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/confirm-yape')
+  confirmYapePayment(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ConfirmYapePaymentDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.paymentService.confirmYapePayment(
+      id,
+      user.companyId,
+      user.userId,
+      dto.reference,
+    );
+  }
 
   @UseGuards(JwtAuthGuard)
   @Post('links')
@@ -72,7 +120,7 @@ export class PaymentController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.paymentService.cancel(id, user.companyId || '');
+    return this.paymentService.cancel(id, user.companyId, user.userId);
   }
 
   @Post('webhook')

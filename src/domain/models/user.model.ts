@@ -1,6 +1,6 @@
 export class User {
   id!: string;
-  companyId?: string;
+  companyId!: string;
   companyName?: string;
   email!: string;
   firstName!: string;

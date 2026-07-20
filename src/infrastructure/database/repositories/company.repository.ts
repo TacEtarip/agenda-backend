@@ -23,4 +23,10 @@ export class CompanyRepository implements ICompanyRepository {
     const ormEntity = await this.repository.findOne({ where: { id } });
     return ormEntity ? CompanyMapper.toDomain(ormEntity) : null;
   }
+
+  async update(id: string, company: Partial<Company>): Promise<Company> {
+    await this.repository.update(id, CompanyMapper.toOrmEntity(company));
+    const updated = await this.repository.findOneOrFail({ where: { id } });
+    return CompanyMapper.toDomain(updated);
+  }
 }

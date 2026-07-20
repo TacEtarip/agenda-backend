@@ -13,6 +13,8 @@ export class PaymentMapper {
       checkoutUrl: entity.checkoutUrl || undefined,
       reference: entity.reference || undefined,
       paidAt: entity.paidAt || undefined,
+      statusChangedAt: entity.statusChangedAt || undefined,
+      statusChangedByUserId: entity.statusChangedByUserId || undefined,
       sourceType: entity.appointmentId
         ? PaymentSourceType.APPOINTMENT
         : PaymentSourceType.CLIENT_PRODUCT,
@@ -35,6 +37,8 @@ export class PaymentMapper {
       checkoutUrl: payment.checkoutUrl,
       reference: payment.reference,
       paidAt: payment.paidAt,
+      statusChangedAt: payment.statusChangedAt,
+      statusChangedByUserId: payment.statusChangedByUserId,
       appointmentId: payment.appointmentId ?? undefined,
       clientProductId: payment.clientProductId ?? undefined,
     };

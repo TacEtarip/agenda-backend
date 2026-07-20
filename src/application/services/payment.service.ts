@@ -15,6 +15,8 @@ import { CLIENT_PRODUCT_REPOSITORY } from '@domain/ports/client-product.reposito
 import type { IClientProductRepository } from '@domain/ports/client-product.repository.interface';
 import { CLIENT_REPOSITORY } from '@domain/ports/client.repository.interface';
 import type { IClientRepository } from '@domain/ports/client.repository.interface';
+import { COMPANY_REPOSITORY } from '@domain/ports/company.repository.interface';
+import type { ICompanyRepository } from '@domain/ports/company.repository.interface';
 import { PRODUCT_REPOSITORY } from '@domain/ports/product.repository.interface';
 import type { IProductRepository } from '@domain/ports/product.repository.interface';
 import {
@@ -29,6 +31,7 @@ import { PaymentOrigin } from '@domain/enums/payment-origin.enum';
 import { PaymentSourceType } from '@domain/enums/payment-source-type.enum';
 import { PaymentStatus } from '@domain/enums/payment-status.enum';
 import { Payment } from '@domain/models/payment.model';
+import { YapeQrImageService } from './yape-qr-image.service';
 
 export interface CreatePaymentInput {
   sourceType: PaymentSourceType;
@@ -43,6 +46,13 @@ export interface RegisterManualPaymentInput extends CreatePaymentInput {
   reference?: string;
 }
 
+export interface YapeConfiguration {
+  enabled: boolean;
+  phone?: string;
+  accountName?: string;
+  qrImageDataUrl?: string | null;
+}
+
 @Injectable()
 export class PaymentService {
   constructor(
@@ -52,10 +62,128 @@ export class PaymentService {
     @Inject(CLIENT_PRODUCT_REPOSITORY)
     private readonly clientProducts: IClientProductRepository,
     @Inject(CLIENT_REPOSITORY) private readonly clients: IClientRepository,
+    @Inject(COMPANY_REPOSITORY) private readonly companies: ICompanyRepository,
     @Inject(PRODUCT_REPOSITORY) private readonly products: IProductRepository,
     @Inject(PAYMENT_PROVIDER) private readonly provider: IPaymentProvider,
     private readonly config: ConfigService,
+    private readonly yapeQrImages: YapeQrImageService,
   ) {}
+
+  async getYapeConfiguration(companyId: string): Promise<YapeConfiguration> {
+    const company = await this.companies.findById(companyId);
+    if (!company) throw new NotFoundException('Company not found');
+    return {
+      enabled: company.yapeEnabled ?? false,
+      phone: company.yapePhone,
+      accountName: company.yapeAccountName,
+      qrImageDataUrl: company.yapeQrImageDataUrl,
+    };
+  }
+
+  async updateYapeConfiguration(
+    companyId: string,
+    input: YapeConfiguration,
+  ): Promise<YapeConfiguration> {
+    const phone = input.phone?.trim();
+    const accountName = input.accountName?.trim();
+    if (input.enabled && (!phone || !accountName)) {
+      throw new BadRequestException(
+        'Yape phone and account name are required when direct Yape is enabled',
+      );
+    }
+    await this.getYapeConfiguration(companyId);
+    const qrImageDataUrl = input.qrImageDataUrl
+      ? await this.yapeQrImages.sanitize(input.qrImageDataUrl)
+      : '';
+    const company = await this.companies.update(companyId, {
+      yapeEnabled: input.enabled,
+      yapePhone: phone ?? '',
+      yapeAccountName: accountName ?? '',
+      yapeQrImageDataUrl: qrImageDataUrl,
+    });
+    return {
+      enabled: company.yapeEnabled ?? false,
+      phone: company.yapePhone,
+      accountName: company.yapeAccountName,
+      qrImageDataUrl: company.yapeQrImageDataUrl,
+    };
+  }
+
+  async createYapeRequest(
+    input: CreatePaymentInput,
+    companyId: string,
+  ): Promise<Payment> {
+    const configuration = await this.getYapeConfiguration(companyId);
+    if (
+      !configuration.enabled ||
+      !configuration.phone ||
+      !configuration.accountName
+    ) {
+      throw new BadRequestException('Direct Yape payments are not configured');
+    }
+    const source = await this.resolveSource(
+      input.sourceType,
+      input.sourceId,
+      companyId,
+    );
+    await this.assertNotPaid(input.sourceType, input.sourceId);
+    await this.payments.cancelPendingForSource(
+      input.sourceType,
+      input.sourceId,
+    );
+    return this.payments.create({
+      companyId,
+      clientId: source.clientId,
+      appointmentId:
+        input.sourceType === PaymentSourceType.APPOINTMENT
+          ? input.sourceId
+          : undefined,
+      clientProductId:
+        input.sourceType === PaymentSourceType.CLIENT_PRODUCT
+          ? input.sourceId
+          : undefined,
+      amount: input.amount,
+      currency: 'PEN',
+      description: input.description?.trim() || source.description,
+      status: PaymentStatus.PENDING,
+      origin: PaymentOrigin.DIRECT_YAPE,
+      method: PaymentMethod.YAPE,
+    });
+  }
+
+  async confirmYapePayment(
+    id: string,
+    companyId: string,
+    actorUserId: string,
+    reference?: string,
+  ): Promise<Payment> {
+    const payment = await this.getOwnedPayment(id, companyId);
+    if (
+      payment.status !== PaymentStatus.PENDING ||
+      payment.origin !== PaymentOrigin.DIRECT_YAPE ||
+      payment.method !== PaymentMethod.YAPE
+    ) {
+      throw new ConflictException(
+        'Payment is not a pending direct Yape request',
+      );
+    }
+    const updated = await this.payments.transitionStatus(
+      id,
+      companyId,
+      PaymentStatus.PENDING,
+      PaymentStatus.PAID,
+      {
+        paidAt: new Date(),
+        reference: reference?.trim() || undefined,
+        statusChangedAt: new Date(),
+        statusChangedByUserId: actorUserId,
+      },
+    );
+    if (!updated) {
+      throw new ConflictException('Payment is no longer pending');
+    }
+    return updated;
+  }
 
   async createLink(
     input: CreatePaymentInput,
@@ -161,12 +289,29 @@ export class PaymentService {
     return this.payments.findBySource(sourceType, sourceId);
   }
 
-  async cancel(id: string, companyId: string): Promise<Payment> {
+  async cancel(
+    id: string,
+    companyId: string,
+    actorUserId: string,
+  ): Promise<Payment> {
     const payment = await this.getOwnedPayment(id, companyId);
     if (payment.status !== PaymentStatus.PENDING) {
       throw new ConflictException('Only pending payments can be cancelled');
     }
-    return this.payments.update(id, { status: PaymentStatus.CANCELLED });
+    const updated = await this.payments.transitionStatus(
+      id,
+      companyId,
+      PaymentStatus.PENDING,
+      PaymentStatus.CANCELLED,
+      {
+        statusChangedAt: new Date(),
+        statusChangedByUserId: actorUserId,
+      },
+    );
+    if (!updated) {
+      throw new ConflictException('Payment is no longer pending');
+    }
+    return updated;
   }
 
   async handleWebhook(

@@ -1,136 +1,126 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# TacEtarip Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API REST de TacEtarip para administrar empresas, usuarios, clientes, productos, ventas, citas, pagos e integraciones externas.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Tecnologías
 
-## Description
+- NestJS 11 y TypeScript 5.7.
+- TypeORM y PostgreSQL.
+- Autenticación JWT con contraseñas protegidas mediante bcrypt.
+- Jest y Supertest para pruebas unitarias y E2E.
+- Integraciones con Google Calendar, WhatsApp Web y pagos directos por Yape.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Arquitectura
 
-## Project setup
+El código se divide por responsabilidad:
+
+```text
+src/
+├── domain/          Entidades, repositorios y reglas del negocio
+├── application/     Casos de uso, servicios y DTO
+└── infrastructure/  HTTP, persistencia, proveedores y configuración
+```
+
+Las operaciones se aíslan por empresa. Los controladores obtienen la empresa autenticada del JWT y los repositorios aplican ese alcance al consultar o modificar información.
+
+## Puesta en marcha local
+
+Requisitos: Node.js, npm, Docker y Docker Compose.
 
 ```bash
-$ npm install
+npm install
+copy .env.example .env
 ```
 
-## Compile and run the project
+Desde la raíz del workspace, inicia PostgreSQL:
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+docker compose up -d
 ```
 
-## Run tests
+Después aplica las migraciones e inicia NestJS:
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm run migration:run
+npm run start:dev
 ```
 
-## Google Calendar synchronization and cost
+La API queda disponible por defecto en `http://localhost:3000`. El origen del frontend local debe estar permitido en la configuración CORS.
 
-The Google Calendar integration is bidirectional. In local development, where
-there is no public HTTPS webhook, each linked user is checked incrementally once
-per minute. This represents approximately 1,440 Calendar API requests per day
-per linked user, plus requests generated when appointments are created, edited,
-or cancelled.
+## Variables de entorno
 
-For production, configure a public HTTPS endpoint so Google can notify the
-backend only when a calendar changes:
+Parte de `.env.example` y completa, como mínimo, la conexión a PostgreSQL y los secretos de autenticación. Para Google Calendar también se necesitan el cliente OAuth, el secreto OAuth, la URL de callback, el secreto de estado y la clave que cifra los tokens almacenados.
 
-```dotenv
-GOOGLE_CALENDAR_WEBHOOK_URL=https://api.example.com/integrations/google/webhook
-```
+No guardes archivos `.env`, credenciales OAuth, tokens, sesiones de WhatsApp ni secretos de proveedores en Git. La preparación de Google Cloud, sus límites y consideraciones de costo están documentados en [Seguridad y costos de Google](../README-SEGURIDAD-COSTOS-GOOGLE.md).
 
-As of July 17, 2026, Google documents standard Calendar API usage at no
-additional cost below its daily threshold of 1,000,000 requests per project.
-Google has announced that requests above that threshold may incur charges later
-in 2026. Verify the current limits before deployment:
-[Google Calendar API usage limits](https://developers.google.com/workspace/calendar/api/guides/quota).
-
-Before creating or rescheduling an appointment, the API checks overlapping
-scheduled appointments for the same user and, when Google synchronization is
-enabled, opaque Google Calendar events. The authenticated endpoint
-`POST /appointments/availability` provides the same preflight check for the UI.
-Event titles and descriptions are never included in the availability response.
-PostgreSQL also enforces non-overlapping scheduled ranges to protect concurrent
-requests. Apply all migrations before starting the API.
-
-The inbound synchronizer also detects post-booking conflicts caused by unlinked
-busy Google events. Active conflicts are stored separately from calendar sync
-status and returned with the appointment as `scheduleConflicts`, allowing the UI
-to warn without treating a healthy Google connection as failed. Moving or
-deleting the Google event, rescheduling or closing the appointment, a full sync
-that no longer contains the event, and disconnecting Google all resolve the
-alert. Only the opaque Google event ID and occupied interval are persisted; no
-event title, description, or attendee data is stored.
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## Migraciones
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+npm run migration:run
+npm run migration:revert
+npm run migration:show
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+En producción se debe mantener `synchronize: false` y desplegar las migraciones antes de iniciar nuevas versiones de la API.
 
-## Resources
+La migración `1784400000000-EnforceUserCompany` hace obligatorio `users.company_id`. Si encuentra usuarios huérfanos se detiene sin borrarlos: antes del despliegue se debe asignar cada registro a una empresa válida o retirarlo mediante un proceso auditado.
 
-Check out a few resources that may come in handy when working with NestJS:
+## Módulos y rutas principales
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+| Área | Ruta base | Responsabilidad |
+| --- | --- | --- |
+| Autenticación | `/auth` | Registro, login y sesión |
+| Clientes | `/clients` | Perfil e historial del cliente |
+| Productos | `/products` | Catálogo de productos y servicios |
+| Ventas | `/sales` | Venta, cantidades, precios y totales |
+| Citas | `/appointments` | Agenda, disponibilidad y estados |
+| Pagos | `/payments` | Pagos manuales, Yape y enlaces simulados |
+| Google | `/integrations/google` | OAuth, Calendar y webhooks |
+| WhatsApp | `/whatsapp` | Estado y sesión de WhatsApp Web |
 
-## Support
+## Pagos por Yape directo
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Yape directo es la modalidad prioritaria y no requiere credenciales de una pasarela. Cada empresa mantiene su propio número, titular, estado de activación e imagen QR:
 
-## Stay in touch
+```text
+GET   /payments/configuration/yape
+PATCH /payments/configuration/yape
+POST  /payments/yape-requests
+POST  /payments/:id/confirm-yape
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Una solicitud Yape se crea como `PENDING`. La API devuelve el importe y los datos configurados para que el frontend construya las instrucciones de pago. Como una cuenta personal de Yape no expone una confirmación automática a TacEtarip, el usuario debe verificar el abono en Yape y confirmarlo manualmente; solo entonces el pago cambia a `PAID`.
 
-## License
+La imagen QR se almacena temporalmente como una URL de datos en PostgreSQL. El backend comprueba la firma real de PNG/JPEG/WebP, limita la entrada decodificada a 256 KiB y 2048 × 2048 píxeles, rechaza imágenes animadas y la reencodifica como PNG antes de persistirla. Debe migrarse a almacenamiento de objetos, como Amazon S3, antes de escalar el sistema.
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+## Límites locales de WhatsApp Web
+
+Cada sesión de `whatsapp-web.js` abre un cliente Chromium. `WHATSAPP_MAX_CLIENTS` limita los clientes simultáneos por instancia; `WHATSAPP_QR_TIMEOUT_MS` libera sesiones que no escanean el QR y `WHATSAPP_IDLE_TIMEOUT_MS` destruye sesiones inactivas. Estos controles protegen el proceso local, pero al desplegar varias instancias en AWS deberán complementarse con enrutamiento estable de sesión, una cuota distribuida y protección perimetral en WAF/API Gateway.
+
+`POST /payments/links` todavía genera un enlace simulado. No representa una transacción real ni debe habilitarse como Culqi en producción. La futura integración con Culqi deberá validar la firma y el estado de sus webhooks, ser idempotente y conservar la referencia del proveedor.
+
+## Google Calendar
+
+La integración implementa OAuth por empresa, sincronización de citas Agenda → Google y recepción de cambios Google → Agenda mediante webhooks. La aplicación conserva el horario local si un cambio externo provoca un conflicto y deja visible el error de sincronización para que el usuario lo resuelva.
+
+Para que Google pueda llamar al webhook durante desarrollo se necesita una URL HTTPS pública. Consulta el [README principal](../README.md) para el flujo completo y las variables requeridas.
+
+## Pruebas y compilación
+
+```bash
+npm run build
+npm test -- --runInBand
+npm run test:e2e
+```
+
+La referencia actual es de 65 pruebas unitarias y 2 pruebas E2E. El flujo comercial cubre registro → login → cliente → producto → venta con cantidad/precio → pago.
+
+## Lista de control para producción
+
+- Ejecutar migraciones con `synchronize: false`.
+- Usar secretos largos, únicos y gestionados fuera del repositorio.
+- Exponer la API únicamente mediante HTTPS y restringir CORS.
+- Proteger los endpoints con JWT y mantener el aislamiento por empresa.
+- Configurar logs, monitoreo, copias de seguridad y rotación de secretos.
+- Mover QR y adjuntos a almacenamiento de objetos.
+- Sustituir el proveedor de enlaces simulado por la integración oficial de Culqi antes de aceptar pagos automáticos.

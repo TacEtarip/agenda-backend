@@ -2,7 +2,7 @@ import { User } from '@domain/models/user.model';
 
 export class UserResponseDto {
   id!: string;
-  companyId?: string;
+  companyId!: string;
   email!: string;
   firstName!: string;
   lastName!: string;

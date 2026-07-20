@@ -27,6 +27,17 @@ export class UserRepository implements IUserRepository {
     return ormEntity ? UserMapper.toDomain(ormEntity) : null;
   }
 
+  async findByIdAndCompanyId(
+    id: string,
+    companyId: string,
+  ): Promise<User | null> {
+    const ormEntity = await this.repository.findOne({
+      where: { id, companyId },
+      relations: { company: true },
+    });
+    return ormEntity ? UserMapper.toDomain(ormEntity) : null;
+  }
+
   async findByEmail(email: string): Promise<User | null> {
     const ormEntity = await this.repository.findOne({
       where: { email },

@@ -11,7 +11,6 @@ import type { IUserRepository } from '@domain/ports/user.repository.interface';
 import { COMPANY_REPOSITORY } from '@domain/ports/company.repository.interface';
 import type { ICompanyRepository } from '@domain/ports/company.repository.interface';
 import { User } from '@domain/models/user.model';
-import type { RegisterDto } from '@infrastructure/http/dtos/auth/register.dto';
 import type { RegisterCompanyDto } from '@infrastructure/http/dtos/auth/register-company.dto';
 
 @Injectable()
@@ -54,25 +53,6 @@ export class AuthService {
     return this.authProvider.generateToken(user);
   }
 
-  async register(dto: RegisterDto): Promise<{ accessToken: string }> {
-    const existing = await this.userRepository.findByEmail(dto.email);
-    if (existing) {
-      throw new ConflictException('A user with this email already exists');
-    }
-
-    const passwordHash = await this.authProvider.hashPassword(dto.password);
-
-    const user = await this.userRepository.create({
-      email: dto.email,
-      firstName: dto.firstName,
-      lastName: dto.lastName,
-      phone: dto.phone.trim(),
-      passwordHash,
-    });
-
-    return this.authProvider.generateToken(user);
-  }
-
   async login(
     email: string,
     password: string,
@@ -83,7 +63,7 @@ export class AuthService {
 
   async validateUser(email: string, password: string): Promise<User> {
     const user = await this.userRepository.findByEmail(email);
-    if (!user?.passwordHash) {
+    if (!user?.passwordHash || !user.companyId) {
       throw new UnauthorizedException('Invalid credentials');
     }
 

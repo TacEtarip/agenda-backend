@@ -92,6 +92,12 @@ export class PaymentOrmEntity {
   @Column({ name: 'paid_at', type: 'timestamp', nullable: true })
   paidAt!: Date | null;
 
+  @Column({ name: 'status_changed_at', type: 'timestamp', nullable: true })
+  statusChangedAt!: Date | null;
+
+  @Column({ name: 'status_changed_by_user_id', type: 'uuid', nullable: true })
+  statusChangedByUserId!: string | null;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 

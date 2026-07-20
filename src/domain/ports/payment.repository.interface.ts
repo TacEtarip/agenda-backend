@@ -27,10 +27,29 @@ export interface IPaymentRepository {
   create(payment: Partial<Payment>): Promise<Payment>;
   findById(id: string): Promise<Payment | null>;
   findByProviderPaymentId(providerPaymentId: string): Promise<Payment | null>;
-  findBySource(sourceType: PaymentSourceType, sourceId: string): Promise<Payment[]>;
-  findActivePending(sourceType: PaymentSourceType, sourceId: string): Promise<Payment | null>;
-  findPaid(sourceType: PaymentSourceType, sourceId: string): Promise<Payment | null>;
+  findBySource(
+    sourceType: PaymentSourceType,
+    sourceId: string,
+  ): Promise<Payment[]>;
+  findActivePending(
+    sourceType: PaymentSourceType,
+    sourceId: string,
+  ): Promise<Payment | null>;
+  findPaid(
+    sourceType: PaymentSourceType,
+    sourceId: string,
+  ): Promise<Payment | null>;
   findAll(filters: PaymentListFilters): Promise<PaymentListResult>;
   update(id: string, payment: Partial<Payment>): Promise<Payment>;
-  cancelPendingForSource(sourceType: PaymentSourceType, sourceId: string): Promise<void>;
+  transitionStatus(
+    id: string,
+    companyId: string,
+    fromStatus: PaymentStatus,
+    toStatus: PaymentStatus,
+    payment: Partial<Payment>,
+  ): Promise<Payment | null>;
+  cancelPendingForSource(
+    sourceType: PaymentSourceType,
+    sourceId: string,
+  ): Promise<void>;
 }

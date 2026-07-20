@@ -1,4 +1,9 @@
 export class Company {
+  yapeEnabled?: boolean;
+  yapePhone?: string;
+  yapeAccountName?: string;
+  yapeQrImageDataUrl?: string;
+
   constructor(
     public id: string,
     public name: string,

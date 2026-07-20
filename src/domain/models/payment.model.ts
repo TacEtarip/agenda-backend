@@ -19,6 +19,8 @@ export class Payment {
   checkoutUrl?: string;
   reference?: string;
   paidAt?: Date;
+  statusChangedAt?: Date;
+  statusChangedByUserId?: string;
   createdAt!: Date;
   updatedAt!: Date;
 

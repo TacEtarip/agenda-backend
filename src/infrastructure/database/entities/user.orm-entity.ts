@@ -17,7 +17,7 @@ export class UserOrmEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column({ name: 'company_id', nullable: true })
+  @Column({ name: 'company_id', type: 'uuid' })
   companyId!: string;
 
   @ManyToOne(

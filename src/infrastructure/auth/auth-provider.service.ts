@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { IAuthProvider } from '@domain/ports/auth.provider.interface';
@@ -19,6 +19,9 @@ export class AuthProviderService implements IAuthProvider {
   }
 
   generateToken(user: User): { accessToken: string } {
+    if (!user.companyId) {
+      throw new UnauthorizedException('User is not associated with a company');
+    }
     const payload = {
       sub: user.id,
       email: user.email,

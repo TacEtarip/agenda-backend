@@ -3,7 +3,9 @@ import {
   Logger,
   OnModuleInit,
   OnModuleDestroy,
+  ServiceUnavailableException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Client, LocalAuth } from 'whatsapp-web.js';
 import {
   IMessagingProvider,
@@ -15,6 +17,8 @@ interface TenantSession {
   qrCode: string | null;
   status: MessagingStatus;
   initPromise?: Promise<void>;
+  pairingTimer?: ReturnType<typeof setTimeout>;
+  idleTimer?: ReturnType<typeof setTimeout>;
 }
 
 @Injectable()
@@ -23,8 +27,17 @@ export class WhatsAppWebProviderService
 {
   private readonly tenants = new Map<string, TenantSession>();
   private readonly logger = new Logger(WhatsAppWebProviderService.name);
+  private readonly maxClients: number;
+  private readonly qrTimeoutMs: number;
+  private readonly idleTimeoutMs: number;
 
-  constructor() {}
+  constructor(config: ConfigService) {
+    this.maxClients = Number(config.get('WHATSAPP_MAX_CLIENTS') ?? 5);
+    this.qrTimeoutMs = Number(config.get('WHATSAPP_QR_TIMEOUT_MS') ?? 300_000);
+    this.idleTimeoutMs = Number(
+      config.get('WHATSAPP_IDLE_TIMEOUT_MS') ?? 1_800_000,
+    );
+  }
 
   async onModuleInit() {
     this.logger.log('WhatsAppWebProviderService inicializado (lazy init).');
@@ -32,19 +45,22 @@ export class WhatsAppWebProviderService
 
   async onModuleDestroy() {
     this.logger.log('Cerrando clientes de WhatsApp...');
-    for (const [userId, tenant] of this.tenants.entries()) {
-      try {
-        await tenant.client.destroy();
-        this.logger.log(`Cliente WA destruido para el usuario ${userId}`);
-      } catch (err) {
-        this.logger.error(`Error destruyendo WA para ${userId}`, err);
-      }
-    }
+    await Promise.all(
+      [...this.tenants.entries()].map(([userId, tenant]) =>
+        this.releaseTenant(userId, tenant, 'application shutdown'),
+      ),
+    );
   }
 
   async initialize(userId: string): Promise<void> {
     if (this.tenants.has(userId)) {
+      this.touchTenant(userId, this.tenants.get(userId)!);
       return;
+    }
+    if (this.tenants.size >= this.maxClients) {
+      throw new ServiceUnavailableException(
+        'WhatsApp connection capacity is temporarily full',
+      );
     }
 
     const tenant: TenantSession = {
@@ -60,10 +76,11 @@ export class WhatsAppWebProviderService
 
     this.tenants.set(userId, tenant);
     this.registerEvents(userId, tenant);
+    this.touchTenant(userId, tenant);
 
-    tenant.initPromise = tenant.client.initialize().catch((error) => {
+    tenant.initPromise = tenant.client.initialize().catch(async (error) => {
       this.logger.error(`Error al inicializar WhatsApp para ${userId}`, error);
-      tenant.status = 'DISCONNECTED';
+      await this.releaseTenant(userId, tenant, 'initialization failure');
     });
   }
 
@@ -72,12 +89,17 @@ export class WhatsAppWebProviderService
       this.logger.log(`QR Code generado para ${userId}. Esperando escaneo...`);
       tenant.qrCode = qr;
       tenant.status = 'WAITING_QR';
+      this.schedulePairingTimeout(userId, tenant);
+      this.touchTenant(userId, tenant);
     });
 
     tenant.client.on('ready', () => {
       this.logger.log(`¡Cliente de WhatsApp conectado y listo para ${userId}!`);
       tenant.qrCode = null;
       tenant.status = 'CONNECTED';
+      this.clearTimer(tenant.pairingTimer);
+      tenant.pairingTimer = undefined;
+      this.touchTenant(userId, tenant);
     });
 
     tenant.client.on('authenticated', () => {
@@ -89,13 +111,12 @@ export class WhatsAppWebProviderService
         `Fallo en la autenticación de WhatsApp para ${userId}`,
         msg,
       );
-      tenant.status = 'DISCONNECTED';
+      void this.releaseTenant(userId, tenant, 'authentication failure');
     });
 
     tenant.client.on('disconnected', (reason) => {
       this.logger.warn(`WhatsApp desconectado para ${userId}`, reason);
-      tenant.status = 'DISCONNECTED';
-      tenant.qrCode = null;
+      void this.releaseTenant(userId, tenant, 'remote disconnect');
     });
   }
 
@@ -103,7 +124,14 @@ export class WhatsAppWebProviderService
     if (!this.tenants.has(userId)) {
       await this.initialize(userId);
     }
-    return this.tenants.get(userId)!;
+    const tenant = this.tenants.get(userId);
+    if (!tenant) {
+      throw new ServiceUnavailableException(
+        'WhatsApp connection could not be initialized',
+      );
+    }
+    this.touchTenant(userId, tenant);
+    return tenant;
   }
 
   async sendMessage(
@@ -124,6 +152,7 @@ export class WhatsAppWebProviderService
       const chatId = `${cleanPhone}@c.us`;
 
       await tenant.client.sendMessage(chatId, message);
+      this.touchTenant(userId, tenant);
       this.logger.log(
         `Mensaje enviado correctamente a ${phone} por el usuario ${userId}`,
       );
@@ -145,5 +174,44 @@ export class WhatsAppWebProviderService
   async getStatus(userId: string): Promise<MessagingStatus> {
     const tenant = await this.getOrInitTenant(userId);
     return tenant.status;
+  }
+
+  private schedulePairingTimeout(userId: string, tenant: TenantSession): void {
+    this.clearTimer(tenant.pairingTimer);
+    tenant.pairingTimer = setTimeout(() => {
+      void this.releaseTenant(userId, tenant, 'QR pairing timeout');
+    }, this.qrTimeoutMs);
+    tenant.pairingTimer.unref?.();
+  }
+
+  private touchTenant(userId: string, tenant: TenantSession): void {
+    this.clearTimer(tenant.idleTimer);
+    tenant.idleTimer = setTimeout(() => {
+      void this.releaseTenant(userId, tenant, 'idle timeout');
+    }, this.idleTimeoutMs);
+    tenant.idleTimer.unref?.();
+  }
+
+  private async releaseTenant(
+    userId: string,
+    tenant: TenantSession,
+    reason: string,
+  ): Promise<void> {
+    if (this.tenants.get(userId) !== tenant) return;
+    this.tenants.delete(userId);
+    this.clearTimer(tenant.pairingTimer);
+    this.clearTimer(tenant.idleTimer);
+    tenant.qrCode = null;
+    tenant.status = 'DISCONNECTED';
+    try {
+      await tenant.client.destroy();
+      this.logger.log(`Cliente WA liberado para ${userId}: ${reason}`);
+    } catch (error) {
+      this.logger.error(`Error liberando WA para ${userId}: ${reason}`, error);
+    }
+  }
+
+  private clearTimer(timer?: ReturnType<typeof setTimeout>): void {
+    if (timer) clearTimeout(timer);
   }
 }

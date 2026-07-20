@@ -8,7 +8,6 @@ import {
 } from '@nestjs/common';
 import { AuthService } from '@application/services/auth.service';
 import { LoginDto } from '../dtos/auth/login.dto';
-import { RegisterDto } from '../dtos/auth/register.dto';
 import { RegisterCompanyDto } from '../dtos/auth/register-company.dto';
 import { JwtAuthGuard } from '@infrastructure/auth/guards/jwt-auth.guard';
 
@@ -19,11 +18,6 @@ export class AuthController {
   @Post('register-company')
   registerCompany(@Body() dto: RegisterCompanyDto) {
     return this.authService.registerCompany(dto);
-  }
-
-  @Post('register')
-  register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
   }
 
   @Post('login')

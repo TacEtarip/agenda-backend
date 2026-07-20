@@ -68,5 +68,18 @@ export function validateEnv(config: Env): Env {
     }
   }
 
+  const positiveIntegerDefaults = {
+    WHATSAPP_MAX_CLIENTS: 5,
+    WHATSAPP_QR_TIMEOUT_MS: 300_000,
+    WHATSAPP_IDLE_TIMEOUT_MS: 1_800_000,
+  } as const;
+  for (const [key, defaultValue] of Object.entries(positiveIntegerDefaults)) {
+    const rawValue = config[key] ?? String(defaultValue);
+    const value = Number(rawValue);
+    if (!Number.isInteger(value) || value <= 0) {
+      throw new Error(`${key} must be a positive integer`);
+    }
+  }
+
   return config;
 }
