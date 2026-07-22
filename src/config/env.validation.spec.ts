@@ -51,4 +51,24 @@ describe('validateEnv', () => {
       'GOOGLE_TOKEN_ENCRYPTION_KEY must be a base64-encoded 32-byte key',
     );
   });
+
+  it('accepts a valid payment credential encryption key', () => {
+    const config = {
+      ...requiredConfig,
+      PAYMENT_CREDENTIAL_ENCRYPTION_KEY: Buffer.alloc(32, 9).toString('base64'),
+    };
+
+    expect(validateEnv(config)).toEqual(config);
+  });
+
+  it('rejects an invalid payment credential encryption key', () => {
+    expect(() =>
+      validateEnv({
+        ...requiredConfig,
+        PAYMENT_CREDENTIAL_ENCRYPTION_KEY: 'invalid-key',
+      }),
+    ).toThrow(
+      'PAYMENT_CREDENTIAL_ENCRYPTION_KEY must be a base64-encoded 32-byte key',
+    );
+  });
 });

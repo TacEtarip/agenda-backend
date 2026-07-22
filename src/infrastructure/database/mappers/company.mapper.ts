@@ -13,6 +13,10 @@ export class CompanyMapper {
     company.yapePhone = ormEntity.yapePhone ?? undefined;
     company.yapeAccountName = ormEntity.yapeAccountName ?? undefined;
     company.yapeQrImageDataUrl = ormEntity.yapeQrImageDataUrl ?? undefined;
+    company.culqiEnabled = ormEntity.culqiEnabled;
+    company.culqiPublicKey = ormEntity.culqiPublicKey ?? undefined;
+    company.culqiPrivateKeyEncrypted =
+      ormEntity.culqiPrivateKeyEncrypted ?? undefined;
     return company;
   }
 
@@ -28,6 +32,13 @@ export class CompanyMapper {
       ormEntity.yapeAccountName = domain.yapeAccountName || null;
     if (domain.yapeQrImageDataUrl !== undefined)
       ormEntity.yapeQrImageDataUrl = domain.yapeQrImageDataUrl || null;
+    if (domain.culqiEnabled !== undefined)
+      ormEntity.culqiEnabled = domain.culqiEnabled;
+    if (domain.culqiPublicKey !== undefined)
+      ormEntity.culqiPublicKey = domain.culqiPublicKey || null;
+    if (domain.culqiPrivateKeyEncrypted !== undefined)
+      ormEntity.culqiPrivateKeyEncrypted =
+        domain.culqiPrivateKeyEncrypted || null;
     return ormEntity;
   }
 }

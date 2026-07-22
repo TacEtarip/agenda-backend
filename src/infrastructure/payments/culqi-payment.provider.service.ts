@@ -1,36 +1,30 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import {
   IPaymentProvider,
   PaymentIntent,
+  PaymentProviderCredentials,
   PaymentStatus,
 } from '@domain/ports/payment.provider.interface';
 
 @Injectable()
 export class CulqiPaymentProviderService implements IPaymentProvider {
   private readonly logger = new Logger(CulqiPaymentProviderService.name);
-  private readonly apiKey: string;
-
-  constructor(private readonly configService: ConfigService) {
-    // Tomamos la llave de Culqi o MercadoPago desde las variables de entorno
-    this.apiKey = this.configService.get<string>(
-      'PAYMENT_API_KEY',
-      'default_test_key',
-    );
-  }
 
   async createPaymentIntent(
+    credentials: PaymentProviderCredentials,
     amount: number,
     currency: string,
     description: string,
     internalReferenceId: string,
   ): Promise<PaymentIntent> {
     this.logger.log(
-      `Creando intento de pago en pasarela local (S/ ${amount}) para la ref: ${internalReferenceId}`,
+      `Creando intento de pago Culqi ${this.environment(credentials.publicKey)} (${currency} ${amount}) para la ref: ${internalReferenceId}`,
     );
+    void description;
+    void credentials.privateKey;
 
-    // Aquí iría la llamada HTTP real a la API de Culqi o MercadoPago
-    // Simulator para modo desarrollo:
+    // La llamada real a Culqi se conectará aquí usando las credenciales
+    // ya resueltas para la empresa propietaria del cobro.
     const mockPaymentId = `pay_test_${Math.random().toString(36).substring(7)}`;
 
     return {
@@ -39,10 +33,18 @@ export class CulqiPaymentProviderService implements IPaymentProvider {
     };
   }
 
-  async verifyPaymentStatus(paymentId: string): Promise<PaymentStatus> {
+  async verifyPaymentStatus(
+    credentials: PaymentProviderCredentials,
+    paymentId: string,
+  ): Promise<PaymentStatus> {
     this.logger.log(`Verificando estado del pago: ${paymentId}`);
+    void credentials.privateKey;
 
-    // Aquí consultarías a la API real para ver si el pago por Yape/Plin fue concretado
-    return 'PAID'; // Simulado como pagado
+    // La consulta real del estado a Culqi se conectará en esta operación.
+    return 'PAID';
+  }
+
+  private environment(publicKey: string): string {
+    return publicKey.startsWith('pk_live_') ? 'live' : 'test';
   }
 }

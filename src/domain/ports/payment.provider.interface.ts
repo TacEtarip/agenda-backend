@@ -7,6 +7,11 @@ export interface PaymentIntent {
   checkoutUrl: string; // URL a la que Angular redirigirá para pagar con Yape/Plin/Tarjeta
 }
 
+export interface PaymentProviderCredentials {
+  publicKey: string;
+  privateKey: string;
+}
+
 export interface IPaymentProvider {
   /**
    * Genera un intento de pago y devuelve la URL para cobrar
@@ -16,6 +21,7 @@ export interface IPaymentProvider {
    * @param internalReferenceId ID interno de tu BD (ej. id de la suscripción o usuario)
    */
   createPaymentIntent(
+    credentials: PaymentProviderCredentials,
     amount: number,
     currency: string,
     description: string,
@@ -26,5 +32,8 @@ export interface IPaymentProvider {
    * Verifica el estado final de un pago (útil para webhooks o comprobación manual)
    * @param paymentId El ID externo de la pasarela
    */
-  verifyPaymentStatus(paymentId: string): Promise<PaymentStatus>;
+  verifyPaymentStatus(
+    credentials: PaymentProviderCredentials,
+    paymentId: string,
+  ): Promise<PaymentStatus>;
 }

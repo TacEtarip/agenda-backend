@@ -80,7 +80,13 @@ describe('PaymentService', () => {
         id: 'provider-1',
         checkoutUrl: 'https://pay.test/1',
       }),
-      verifyPaymentStatus: jest.fn(),
+      verifyPaymentStatus: jest.fn().mockResolvedValue('PAID'),
+    };
+    const culqiConfiguration = {
+      getCredentials: jest.fn().mockResolvedValue({
+        publicKey: 'pk_test_company1',
+        privateKey: 'sk_test_company1',
+      }),
     };
     const config = {
       get: jest.fn().mockReturnValue(undefined),
@@ -95,8 +101,15 @@ describe('PaymentService', () => {
       provider,
       config,
       new YapeQrImageService(),
+      culqiConfiguration as never,
     );
-    return { service, payments, provider, companies };
+    return {
+      service,
+      payments,
+      provider,
+      companies,
+      culqiConfiguration,
+    };
   };
 
   it('creates an independent payment link and stores the provider result', async () => {
@@ -116,6 +129,10 @@ describe('PaymentService', () => {
       appointment.id,
     );
     expect(provider.createPaymentIntent).toHaveBeenCalledWith(
+      {
+        publicKey: 'pk_test_company1',
+        privateKey: 'sk_test_company1',
+      },
       80,
       'PEN',
       'Consulta',
@@ -216,7 +233,7 @@ describe('PaymentService', () => {
   });
 
   it('handles duplicate webhook notifications idempotently', async () => {
-    const { service, payments } = setup();
+    const { service, payments, provider } = setup();
     payments.findByProviderPaymentId.mockResolvedValue(
       createPayment({
         status: PaymentStatus.PAID,
@@ -230,6 +247,13 @@ describe('PaymentService', () => {
     );
 
     expect(result.status).toBe(PaymentStatus.PAID);
+    expect(provider.verifyPaymentStatus).toHaveBeenCalledWith(
+      {
+        publicKey: 'pk_test_company1',
+        privateKey: 'sk_test_company1',
+      },
+      'provider-1',
+    );
     expect(payments.update).not.toHaveBeenCalled();
   });
 });

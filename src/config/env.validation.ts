@@ -29,6 +29,18 @@ export function validateEnv(config: Env): Env {
     throw new Error('DB_PORT must be a valid TCP port');
   }
 
+  if (config.PAYMENT_CREDENTIAL_ENCRYPTION_KEY) {
+    const paymentEncryptionKey = Buffer.from(
+      config.PAYMENT_CREDENTIAL_ENCRYPTION_KEY,
+      'base64',
+    );
+    if (paymentEncryptionKey.length !== 32) {
+      throw new Error(
+        'PAYMENT_CREDENTIAL_ENCRYPTION_KEY must be a base64-encoded 32-byte key',
+      );
+    }
+  }
+
   const configuredGoogleVars = googleEnvVars.filter((key) => config[key]);
   if (
     configuredGoogleVars.length > 0 &&

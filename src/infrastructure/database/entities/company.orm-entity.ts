@@ -39,6 +39,20 @@ export class CompanyOrmEntity {
   @Column({ name: 'yape_qr_image_data_url', type: 'text', nullable: true })
   yapeQrImageDataUrl!: string | null;
 
+  @Column({ name: 'culqi_enabled', default: false })
+  culqiEnabled!: boolean;
+
+  @Column({
+    name: 'culqi_public_key',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
+  culqiPublicKey!: string | null;
+
+  @Column({ name: 'culqi_private_key_encrypted', type: 'text', nullable: true })
+  culqiPrivateKeyEncrypted!: string | null;
+
   @CreateDateColumn()
   createdAt!: Date;
 

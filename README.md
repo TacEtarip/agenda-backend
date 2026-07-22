@@ -49,7 +49,7 @@ La API queda disponible por defecto en `http://localhost:3000`. El origen del fr
 
 ## Variables de entorno
 
-Parte de `.env.example` y completa, como mínimo, la conexión a PostgreSQL y los secretos de autenticación. Para Google Calendar también se necesitan el cliente OAuth, el secreto OAuth, la URL de callback, el secreto de estado y la clave que cifra los tokens almacenados.
+Parte de `.env.example` y completa, como mínimo, la conexión a PostgreSQL y los secretos de autenticación. Para preparar credenciales Culqi por negocio define `PAYMENT_CREDENTIAL_ENCRYPTION_KEY` con una clave base64 de 32 bytes. Para Google Calendar también se necesitan el cliente OAuth, el secreto OAuth, la URL de callback, el secreto de estado y la clave que cifra los tokens almacenados.
 
 No guardes archivos `.env`, credenciales OAuth, tokens, sesiones de WhatsApp ni secretos de proveedores en Git. La preparación de Google Cloud, sus límites y consideraciones de costo están documentados en [Seguridad y costos de Google](../README-SEGURIDAD-COSTOS-GOOGLE.md).
 

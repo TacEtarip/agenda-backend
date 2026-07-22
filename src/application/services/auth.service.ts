@@ -32,9 +32,18 @@ export class AuthService {
       throw new ConflictException('A user with this email already exists');
     }
 
-    // Create the Company
+    const yapeEnabled = dto.yapeEnabled === true;
+
+    // Create the company with its optional direct Yape configuration.
     const company = await this.companyRepository.create({
-      name: dto.companyName,
+      name: dto.companyName.trim(),
+      yapeEnabled,
+      ...(yapeEnabled
+        ? {
+            yapePhone: dto.yapePhone?.trim(),
+            yapeAccountName: dto.yapeAccountName?.trim(),
+          }
+        : {}),
     });
 
     const passwordHash = await this.authProvider.hashPassword(dto.password);

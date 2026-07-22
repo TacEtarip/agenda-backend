@@ -3,6 +3,9 @@ export class Company {
   yapePhone?: string;
   yapeAccountName?: string;
   yapeQrImageDataUrl?: string;
+  culqiEnabled?: boolean;
+  culqiPublicKey?: string;
+  culqiPrivateKeyEncrypted?: string;
 
   constructor(
     public id: string,

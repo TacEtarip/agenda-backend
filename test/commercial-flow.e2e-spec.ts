@@ -60,6 +60,9 @@ describe('Commercial flow (e2e)', () => {
         phone: '+51987654321',
         password,
         companyName,
+        yapeEnabled: true,
+        yapePhone: '987654321',
+        yapeAccountName: 'Agenda E2E',
       })
       .expect(201);
 
@@ -88,6 +91,17 @@ describe('Commercial flow (e2e)', () => {
         companyName,
       }),
     );
+
+    const yapeConfigurationResponse = await request(server)
+      .get('/payments/configuration/yape')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    expect(yapeConfigurationResponse.body).toEqual({
+      enabled: true,
+      phone: '987654321',
+      accountName: 'Agenda E2E',
+    });
 
     const googleStatusResponse = await request(server)
       .get('/integrations/google/status')

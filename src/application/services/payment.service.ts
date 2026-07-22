@@ -32,6 +32,7 @@ import { PaymentSourceType } from '@domain/enums/payment-source-type.enum';
 import { PaymentStatus } from '@domain/enums/payment-status.enum';
 import { Payment } from '@domain/models/payment.model';
 import { YapeQrImageService } from './yape-qr-image.service';
+import { CulqiConfigurationService } from './culqi-configuration.service';
 
 export interface CreatePaymentInput {
   sourceType: PaymentSourceType;
@@ -67,6 +68,7 @@ export class PaymentService {
     @Inject(PAYMENT_PROVIDER) private readonly provider: IPaymentProvider,
     private readonly config: ConfigService,
     private readonly yapeQrImages: YapeQrImageService,
+    private readonly culqiConfiguration: CulqiConfigurationService,
   ) {}
 
   async getYapeConfiguration(companyId: string): Promise<YapeConfiguration> {
@@ -189,6 +191,7 @@ export class PaymentService {
     input: CreatePaymentInput,
     companyId: string,
   ): Promise<Payment> {
+    const credentials = await this.culqiConfiguration.getCredentials(companyId);
     const source = await this.resolveSource(
       input.sourceType,
       input.sourceId,
@@ -221,6 +224,7 @@ export class PaymentService {
 
     try {
       const intent = await this.provider.createPaymentIntent(
+        credentials,
         input.amount,
         'PEN',
         payment.description,
@@ -316,13 +320,23 @@ export class PaymentService {
 
   async handleWebhook(
     providerPaymentId: string,
-    status: PaymentStatus,
-    signature?: string,
+    _reportedStatus: PaymentStatus,
+    _signature?: string,
   ) {
-    this.assertWebhookSignature(signature);
+    this.assertWebhookSignature(_signature);
     const payment =
       await this.payments.findByProviderPaymentId(providerPaymentId);
     if (!payment) throw new NotFoundException('Payment not found');
+    if (!payment.companyId)
+      throw new NotFoundException('Payment company not found');
+    const credentials = await this.culqiConfiguration.getCredentials(
+      payment.companyId,
+    );
+    const providerStatus = await this.provider.verifyPaymentStatus(
+      credentials,
+      providerPaymentId,
+    );
+    const status = PaymentStatus[providerStatus];
     if (payment.status === status) return payment;
 
     let allowed: PaymentStatus[];

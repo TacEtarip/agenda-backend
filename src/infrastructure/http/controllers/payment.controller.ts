@@ -23,10 +23,33 @@ import { PaymentWebhookDto } from '../dtos/payment/payment-webhook.dto';
 import { UpdateYapeSettingsDto } from '../dtos/payment/update-yape-settings.dto';
 import { CreateYapePaymentRequestDto } from '../dtos/payment/create-yape-payment-request.dto';
 import { ConfirmYapePaymentDto } from '../dtos/payment/confirm-yape-payment.dto';
+import { UpdateCulqiSettingsDto } from '../dtos/payment/update-culqi-settings.dto';
+import { CulqiConfigurationService } from '@application/services/culqi-configuration.service';
 
 @Controller('payments')
 export class PaymentController {
-  constructor(private readonly paymentService: PaymentService) {}
+  constructor(
+    private readonly paymentService: PaymentService,
+    private readonly culqiConfiguration: CulqiConfigurationService,
+  ) {}
+
+  @UseGuards(JwtAuthGuard)
+  @Get('configuration/culqi')
+  getCulqiConfiguration(@CurrentUser() user: AuthenticatedUser) {
+    return this.culqiConfiguration.getConfiguration(user.companyId || '');
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('configuration/culqi')
+  updateCulqiConfiguration(
+    @Body() dto: UpdateCulqiSettingsDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.culqiConfiguration.updateConfiguration(
+      user.companyId || '',
+      dto,
+    );
+  }
 
   @UseGuards(JwtAuthGuard)
   @Get('configuration/yape')
