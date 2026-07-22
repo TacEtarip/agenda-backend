@@ -71,6 +71,9 @@ export class UserOrmEntity {
   @Column({ name: 'payment_gateway_key', nullable: true })
   paymentGatewayKey!: string;
 
+  @Column({ name: 'onboarding_completed', default: false })
+  onboardingCompleted!: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 

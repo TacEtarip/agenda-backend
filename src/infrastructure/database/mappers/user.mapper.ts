@@ -20,6 +20,7 @@ export class UserMapper {
       sendDailyDigest: ormEntity.sendDailyDigest,
       paymentEnabled: ormEntity.paymentEnabled,
       paymentGatewayKey: ormEntity.paymentGatewayKey,
+      onboardingCompleted: ormEntity.onboardingCompleted,
       createdAt: ormEntity.createdAt,
     });
   }
@@ -53,6 +54,8 @@ export class UserMapper {
       ormEntity.paymentEnabled = domainUser.paymentEnabled;
     if (domainUser.paymentGatewayKey !== undefined)
       ormEntity.paymentGatewayKey = domainUser.paymentGatewayKey;
+    if (domainUser.onboardingCompleted !== undefined)
+      ormEntity.onboardingCompleted = domainUser.onboardingCompleted;
 
     return ormEntity;
   }

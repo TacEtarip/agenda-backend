@@ -24,4 +24,8 @@ export class UpdateUserSettingsDto {
   @IsOptional()
   @IsString()
   paymentGatewayKey?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  onboardingCompleted?: boolean;
 }

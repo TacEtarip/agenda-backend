@@ -18,6 +18,7 @@ export class User {
   sendDailyDigest?: boolean;
   paymentEnabled?: boolean;
   paymentGatewayKey?: string;
+  onboardingCompleted?: boolean;
 
   constructor(partial: Partial<User>) {
     Object.assign(this, partial);

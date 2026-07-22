@@ -68,6 +68,7 @@ export class UserController {
         syncContacts: user.syncContacts,
         sendDailyDigest: user.sendDailyDigest,
         paymentEnabled: user.paymentEnabled,
+        onboardingCompleted: user.onboardingCompleted,
       },
     };
   }

@@ -12,6 +12,7 @@ export class UserResponseDto {
   syncContacts?: boolean;
   sendDailyDigest?: boolean;
   paymentEnabled?: boolean;
+  onboardingCompleted?: boolean;
   createdAt!: Date;
 
   static fromDomain(user: User): UserResponseDto {
@@ -27,6 +28,7 @@ export class UserResponseDto {
       syncContacts: user.syncContacts,
       sendDailyDigest: user.sendDailyDigest,
       paymentEnabled: user.paymentEnabled,
+      onboardingCompleted: user.onboardingCompleted,
       createdAt: user.createdAt,
     };
   }
